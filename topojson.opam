@@ -5,7 +5,7 @@ description: """
 TopoJSON is a JSON format that embedds geographic data structures into a shared topology.
   This library provides a functor for building a module for manipulating and parsing Topojson into OCaml."""
 maintainer: ["pf341@patricoferris.com"]
-authors: ["Patrick Ferris"]
+authors: ["Patrick Ferris" "," "Jay Dev Jha"]
 license: "MIT"
 homepage: "https://github.com/patricoferris/ocaml-topojson"
 bug-reports: "https://github.com/patricoferris/ocaml-topojson/issues"

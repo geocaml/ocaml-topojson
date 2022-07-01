@@ -9,7 +9,7 @@
 
 (license MIT)
 
-(authors "Patrick Ferris")
+(authors "Patrick Ferris", "Jay Dev Jha")
 
 (maintainers "pf341@patricoferris.com")
 
