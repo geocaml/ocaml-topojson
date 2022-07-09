@@ -3,8 +3,8 @@ opam-version: "2.0"
 synopsis: "Streaming topojson library using jsonm"
 description:
   "A library for manipulating Topojson as a stream, useful because Topojson can be gigabytes in size."
-maintainer: ["pf341@patricoferris.com"]
-authors: ["Patrick Ferris" "," "Jay Dev Jha"]
+maintainer: ["patrick@sirref.org"]
+authors: ["Patrick Ferris" "Jay Dev Jha"]
 license: "MIT"
 homepage: "https://github.com/patricoferris/ocaml-topojson"
 bug-reports: "https://github.com/patricoferris/ocaml-topojson/issues"
