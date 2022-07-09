@@ -1,8 +1,131 @@
 (* Types and Signatures of various modules/ functions required by topojson.ml *)
+module type Json = sig
+  type t
+  (** The type your parser uses to represent a parsed JSON object. *)
+
+  val find : t -> string list -> t option
+
+  val to_string : t -> (string, [ `Msg of string ]) result
+  (** Convert the JSON to a string. *)
+
+  val string : string -> t
+  (** Create a JSON string. *)
+
+  val to_float : t -> (float, [ `Msg of string ]) result
+  (** Convert the JSON to a float. *)
+
+  val float : float -> t
+  (** Converts a float to JSON *)
+
+  val to_int : t -> (int, [ `Msg of string ]) result
+  (** Convert the JSON to an integer. *)
+
+  val int : int -> t
+  (** Converts an integer to JSON *)
+
+  val to_list : (t -> 'a) -> t -> ('a list, [ `Msg of string ]) result
+  (** [to_list f] converts the JSON array to a list and applies [f] to each
+      element to convert them too. *)
+
+  val list : ('a -> t) -> 'a list -> t
+  (** Make a JSON array from a list *)
+
+  val to_array : (t -> 'a) -> t -> ('a array, [ `Msg of string ]) result
+  (** Like {!to_list} except to an array. *)
+
+  val array : ('a -> t) -> 'a array -> t
+  (** Like {!list} except for OCaml arrays *)
+
+  val to_obj : t -> ((string * t) list, [ `Msg of string ]) result
+  (** Convert the JSON object to an association list *)
+
+  val obj : (string * t) list -> t
+  (** A JSON object from an association list *)
+
+  val null : t
+  (** Null value *)
+
+  val is_null : t -> bool
+  (** Test for null *)
+end
+
+(* {2 Json Conversion} *)
+
+module type Json_conv = sig
+  type t
+  type json
+end
+
+(** {2 GeoJson Geometry Objects}
+
+    The basic primitives for building geometrical shapes in GeoJson. *)
+
 module type Geometry = sig
+  type json
+
+  module Position : sig
+    type t
+    (** A position - a longitude and latitude with an optional altitude *)
+
+    val lng : t -> float
+    (** The longitude value of the position *)
+
+    val lat : t -> float
+    (** The latitude value of the position *)
+
+    val altitude : t -> float option
+    (** Optional altitude/elevation value of the position *)
+
+    val equal : t -> t -> bool
+    (** Whether two positions are equal by comparing each value *)
+
+    val v : ?altitude:float -> lng:float -> lat:float -> unit -> t
+    (** A position constructor *)
+  end
+
+  module Point : sig
+    type t
+    (** A point is a single {!Position.t} *)
+
+    val position : t -> Position.t
+    (** Convert a point to a position *)
+
+    val v : Position.t -> t
+    (** Create a poitn from a position. *)
+  end
+
+  module MultiPoint : sig
+    type t
+    (** A multipoint is an array of positions. *)
+
+    val coordinates : t -> Position.t array
+    (** Get the positions that make up this multipoint object. *)
+
+    val v : Position.t array -> t
+    (** Create a multipoint object from an array of positions. *)
+  end
+
   module LineString : sig
     type t
+    (** A line string is two or more points *)
 
-    val v : ?arcs:int array -> t
+    val v : int array -> t
   end
+
+  type geometry =
+    | Point of Point.t
+    | MultiPoint of MultiPoint.t
+    | LineString of LineString.t
+  (* | MultiLineString of MultiLineString.t
+     | Polygon of Polygon.t
+     | MultiPolygon of MultiPolygon.t
+     | Collection of t list *)
+
+  and t = geometry * (string * json) list
+
+  val foreign_members : t -> (string * json) list
+  (** [foreign_members t] will extract name/value pair of a foreign member from
+      t (a GeoJSON object) *)
+
+  include Json_conv with type t := t and type json := json
 end
