@@ -1,5 +1,5 @@
-(test
+(executable
  (name test)
- (deps
-  (source_tree test_cases))
+ ; (deps
+ ;  (source_tree test_cases))
  (libraries alcotest ezjsonm topojson))

@@ -1,12 +1,17 @@
 (* Implentation of TopoJSON Objects *)
 
-module Make (J : Geojson.Json) = struct
-  module G = Geojson.Make (J)
+module Intf = Topojson_intf
 
-  let ( let* ) = Result.bind
+module type S = Topojson_intf.S
+module type Json = Topojson_intf.Json
 
-  let decode_or_err f v =
-    match f v with Ok x -> x | Error (`Msg m) -> failwith m
+let ( let* ) = Result.bind
+
+let decode_or_err f v =
+  match f v with Ok x -> x | Error (`Msg m) -> failwith m
+
+module Make (J : Intf.Json) = struct
+  type json = J.t
 
   let bbox_to_json_or_empty bbox =
     Option.(
@@ -15,7 +20,7 @@ module Make (J : Geojson.Json) = struct
   module Geometry = struct
     type json = J.t
 
-    let keys_in_use = [ "type"; "coordinates"; "bbox"; "arcs" ]
+    let keys_in_use = [ "type"; "coordinates"; "bbox"; "arcs"; "id" ]
 
     let foreign_members json =
       match J.to_obj json with
@@ -38,8 +43,22 @@ module Make (J : Geojson.Json) = struct
           | t when t = typ -> p_c coords
           | t -> Error (`Msg ("Expected type of `" ^ typ ^ "' but got " ^ t)))
 
+    let parse_by_type json p_a typ =
+      match (J.find json [ "type" ], J.find json [ "arcs" ]) with
+      | None, _ ->
+          Error
+            (`Msg
+              ("JSON should"
+              ^ "have a key-value for `type' whilst parsing "
+              ^ typ))
+      | _, None -> Error (`Msg "JSON should have a key-value for `arcs'")
+      | Some typ, Some arcs -> (
+          let* typ = J.to_string typ in
+          match typ with
+          | t when t = typ -> p_a arcs
+          | t -> Error (`Msg ("Expected type of `" ^ typ ^ "' but got " ^ t)))
+
     module Position = struct
-      (* We use a float array internally for performance *)
       type t = float array
 
       let lng t = t.(0)
@@ -114,15 +133,16 @@ module Make (J : Geojson.Json) = struct
     end
 
     module LineString = struct
-      type t = int array
+      type t = Arcs.t
 
       let typ = "LineString"
-      let v arcs = arcs
+      let v arc = arc
+      let parse_arcs arcs = J.to_array (decode_or_err J.to_int) arcs
+      let base_of_json json = parse_by_type json parse_arcs typ
 
-      let to_json ?arcs ?bbox ?(foreign_members = []) arcs =
+      let to_json ?bbox ?(foreign_members = []) arc =
         J.obj
-          ([ ("type", J.string typ); ("arcs", J.array Arcs.to_json arcs) ]
-          (* @ arcs *)
+          ([ ("type", J.string typ); ("arcs", Arcs.to_json arc) ]
           @ bbox_to_json_or_empty bbox
           @ foreign_members)
     end
@@ -133,10 +153,61 @@ module Make (J : Geojson.Json) = struct
       let typ = "MultiLineString"
       let v arcs = arcs
 
-      let to_json ?arcs ?bbox ?(foreign_members = []) arcs =
+      let parse_arcs arcs =
+        try J.to_array (decode_or_err LineString.parse_arcs) arcs
+        with Failure m -> Error (`Msg m)
+
+      let base_of_json json = parse_by_type json parse_arcs typ
+
+      let to_json ?bbox ?(foreign_members = []) arcs =
+        J.obj
+          ([ ("type", J.string typ); ("arcs", J.array Arcs.to_json arcs) ]
+          @ bbox_to_json_or_empty bbox
+          @ foreign_members)
+    end
+
+    module Polygon = struct
+      type t = LineString.t array
+
+      let typ = "Polygon"
+      let rings = Fun.id
+      let exterior_ring t = t.(0)
+      let interior_rings t = Array.sub t 1 (Array.length t - 1)
+      let v arcs = arcs
+
+      let parse_arcs arcs =
+        try
+          J.to_array (decode_or_err (J.to_array (decode_or_err J.to_int))) arcs
+        with Failure m -> Error (`Msg m)
+
+      let base_of_json json = parse_by_type json parse_arcs typ
+
+      let to_json ?bbox ?(foreign_members = []) arcs =
         J.obj
           ([ ("type", J.string typ); ("arcs", J.array (J.array J.int) arcs) ]
-          (* @ arcs *)
+          @ bbox_to_json_or_empty bbox
+          @ foreign_members)
+    end
+
+    module MultiPolygon = struct
+      type t = Polygon.t array
+
+      let typ = "MultiPolygon"
+      let polygons = Fun.id
+      let v arcs = arcs
+
+      let parse_arcs arcs =
+        try J.to_array (decode_or_err Polygon.parse_arcs) arcs
+        with Failure m -> Error (`Msg m)
+
+      let base_of_json json = parse_by_type json parse_arcs typ
+
+      let to_json ?bbox ?(foreign_members = []) arcs =
+        J.obj
+          ([
+             ("type", J.string typ);
+             ("arcs", J.array (J.array (J.array J.int)) arcs);
+           ]
           @ bbox_to_json_or_empty bbox
           @ foreign_members)
     end
@@ -146,27 +217,125 @@ module Make (J : Geojson.Json) = struct
       | MultiPoint of MultiPoint.t
       | LineString of LineString.t
       | MultiLineString of MultiLineString.t
-    (* | Polygon of Polygon.t
-       | MultiPolygon of MultiPolygon.t
-       | Collection of t list *)
+      | Polygon of Polygon.t
+      | MultiPolygon of MultiPolygon.t
+      | Collection of t list
 
-    and t = {
-      geometry : geometry;
-      arcs : int array;
-      id : G.json option;
-      properties : (string * G.json) list;
-      foreign_members : (string * G.json) list;
-    }
+    and t = geometry * (string * json) list
+
+    let rec base_of_json json =
+      let fm = foreign_members json in
+      match J.find json [ "type" ] with
+      | Some typ -> (
+          match J.to_string typ with
+          | Ok "Point" ->
+              Result.map (fun v -> (Point v, fm)) @@ Point.base_of_json json
+          | Ok "MultiPoint" ->
+              Result.map (fun v -> (MultiPoint v, fm))
+              @@ MultiPoint.base_of_json json
+          | Ok "LineString" ->
+              Result.map (fun v -> (LineString v, fm))
+              @@ LineString.base_of_json json
+          | Ok "MultiLineString" ->
+              Result.map (fun v -> (MultiLineString v, fm))
+              @@ MultiLineString.base_of_json json
+          | Ok "Polygon" ->
+              Result.map (fun v -> (Polygon v, fm)) @@ Polygon.base_of_json json
+          | Ok "MultiPolygon" ->
+              Result.map (fun v -> (MultiPolygon v, fm))
+              @@ MultiPolygon.base_of_json json
+          | Ok "GeometryCollection" -> (
+              match J.find json [ "geometries" ] with
+              | Some list ->
+                  let geo = J.to_list (decode_or_err base_of_json) list in
+                  Result.map (fun v -> (Collection v, fm)) geo
+              | None ->
+                  Error
+                    (`Msg
+                      "A geometry collection should have a member called \
+                       geometries"))
+          | Ok typ -> Error (`Msg ("Unknown type of geometry " ^ typ))
+          | Error _ as e -> e)
+      | None ->
+          Error
+            (`Msg
+              "A Geojson text should contain one object with a member `type`.")
+
+    let rec to_json ?bbox = function
+      | Point point, foreign_members ->
+          Point.to_json ?bbox ~foreign_members point
+      | MultiPoint mp, foreign_members ->
+          MultiPoint.to_json ?bbox ~foreign_members mp
+      | LineString ls, foreign_members ->
+          LineString.to_json ?bbox ~foreign_members ls
+      | MultiLineString mls, foreign_members ->
+          MultiLineString.to_json ?bbox ~foreign_members mls
+      | Polygon p, foreign_members -> Polygon.to_json ?bbox ~foreign_members p
+      | MultiPolygon mp, foreign_members ->
+          MultiPolygon.to_json ?bbox ~foreign_members mp
+      | Collection c, foreign_members ->
+          J.obj
+            ([
+               ("type", J.string "GeometryCollection");
+               ("geometries", J.list to_json c);
+             ]
+            @ bbox_to_json_or_empty bbox
+            @ foreign_members)
+
+    let foreign_members (_, fm) = fm
   end
 
   module Topology = struct
-    type t = { objects : (string * G.json) list; arcs : int array array }
+    type json = J.t
+
+    let keys_in_use = [ "type"; "arcs"; "objects"; "transform"; "bbox" ]
+
+    let foreign_members json =
+      match J.to_obj json with
+      | Ok assoc ->
+          List.filter (fun (k, _v) -> not (List.mem k keys_in_use)) assoc
+      | Error _ -> []
+
+    module Position = struct
+      type t = float array
+
+      let lng t = t.(0)
+      let lat t = t.(1)
+      let altitude t = try Some t.(2) with _ -> None
+
+      let v ?altitude ~lng ~lat () =
+        match altitude with
+        | Some f -> [| lng; lat; f |]
+        | None -> [| lng; lat |]
+
+      let equal l1 l2 =
+        let n1 = Array.length l1 and n2 = Array.length l2 in
+        if n1 <> n2 then false
+        else
+          let rec loop i =
+            if i = n1 then true
+            else if Float.equal (Array.unsafe_get l1 i) (Array.unsafe_get l2 i)
+            then loop (succ i)
+            else false
+          in
+          loop 0
+
+      let to_json arr = J.array J.float arr
+    end
+
+    type t = { objects : (string * json) list; arcs : Position.t array array }
 
     let of_json json =
       match (J.find json [ "objects" ], J.find json [ "arcs" ]) with
-      | Some objects, arcs ->
-          Result.map (fun v -> { objects; arcs }) (J.to_obj v)
-      | None, _ -> Error (`Msg "No objects and arcs field in Topology object!")
+      | Some objects, Some arcs ->
+          let* objects = J.to_obj objects in
+          let* arcs =
+            J.to_array
+              (decode_or_err (J.to_array (decode_or_err J.to_float)))
+              arcs
+          in
+          { objects; arcs }
+      | _, _ -> Error (`Msg "No objects and/or arcs field in Topology object!")
   end
 
   type t = Topology of Topology.t | Geometry of G.Geometry.t
