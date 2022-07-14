@@ -296,34 +296,10 @@ module Make (J : Intf.Json) = struct
           List.filter (fun (k, _v) -> not (List.mem k keys_in_use)) assoc
       | Error _ -> []
 
-    module Position = struct
-      type t = float array
-
-      let lng t = t.(0)
-      let lat t = t.(1)
-      let altitude t = try Some t.(2) with _ -> None
-
-      let v ?altitude ~lng ~lat () =
-        match altitude with
-        | Some f -> [| lng; lat; f |]
-        | None -> [| lng; lat |]
-
-      let equal l1 l2 =
-        let n1 = Array.length l1 and n2 = Array.length l2 in
-        if n1 <> n2 then false
-        else
-          let rec loop i =
-            if i = n1 then true
-            else if Float.equal (Array.unsafe_get l1 i) (Array.unsafe_get l2 i)
-            then loop (succ i)
-            else false
-          in
-          loop 0
-
-      let to_json arr = J.array J.float arr
-    end
-
-    type t = { objects : (string * json) list; arcs : Position.t array array }
+    type t = {
+      objects : (string * json) list;
+      arcs : Geometry.Position.t array array;
+    }
 
     let of_json json =
       match (J.find json [ "objects" ], J.find json [ "arcs" ]) with
@@ -331,14 +307,16 @@ module Make (J : Intf.Json) = struct
           let* objects = J.to_obj objects in
           let* arcs =
             J.to_array
-              (decode_or_err (J.to_array (decode_or_err J.to_float)))
+              (decode_or_err
+                 (J.to_array
+                    (decode_or_err (J.to_array (decode_or_err J.to_float)))))
               arcs
           in
           Ok { objects; arcs }
       | _, _ -> Error (`Msg "No objects and/or arcs field in Topology object!")
   end
 
-  type t = Topology of Topology.t | Geometry of G.Geometry.t
+  type t = Topology of Topology.t | Geometry of Geometry.t
 
   let of_json json =
     match J.find json [ "type" ] with

@@ -57,9 +57,9 @@ module type Json_conv = sig
   type json
 end
 
-(** {2 GeoJson Geometry Objects}
+(** {2 topojson Geometry Objects}
 
-    The basic primitives for building geometrical shapes in GeoJson. *)
+    The basic primitives for building geometrical shapes in topojson. *)
 
 module type Geometry = sig
   type json
@@ -115,7 +115,7 @@ module type Geometry = sig
     type t
     (** A line string is two or more points *)
 
-    val v : Arcs.t array -> t
+    val v : Arcs.t -> t
     (** Creates a line string from arc indexes *)
   end
 
@@ -171,7 +171,7 @@ module type Geometry = sig
 
   val foreign_members : t -> (string * json) list
   (** [foreign_members t] will extract name/value pair of a foreign member from
-      t (a GeoJSON object) *)
+      t (a topojson object) *)
 
   include Json_conv with type t := t and type json := json
 end
@@ -179,27 +179,12 @@ end
 module type Topology = sig
   type json
 
-  module Position : sig
-    type t
-    (** A position - a longitude and latitude with an optional altitude *)
+  module Geometry : Geometry with type json = json
 
-    val lng : t -> float
-    (** The longitude value of the position *)
-
-    val lat : t -> float
-    (** The latitude value of the position *)
-
-    val altitude : t -> float option
-    (** Optional altitude/elevation value of the position *)
-
-    val equal : t -> t -> bool
-    (** Whether two positions are equal by comparing each value *)
-
-    val v : ?altitude:float -> lng:float -> lat:float -> unit -> t
-    (** A position constructor *)
-  end
-
-  type t = { objects : (string * json) list; arcs : Position.t array array }
+  type t = {
+    objects : (string * json) list;
+    arcs : Geometry.Position.t array array;
+  }
 end
 
 module type S = sig
@@ -209,25 +194,12 @@ module type S = sig
   module Geometry : Geometry with type json = json
   module Topology : Topology with type json = json
 
-  type topojson = Topology of Topology.t | Geometry of Geometry.t
+  (* type topojson = Topology of Topology.t | Geometry of Geometry.t *)
   type t
 
-  val topojson : t -> topojson
-  (** [geojson t] will extract geojson value from t (a GeoJSON object) *)
-
-  val bbox : t -> float array option
-  (** [bbox t] will extract bbox value from t (a GeoJSON object) *)
-
-  val v : ?bbox:float array -> topojson -> t
-  (** [v geojson bbox] combines geojson and bbox to return a GeoJSON object (a
-      type {!t}) *)
-
   val of_json : json -> (t, [ `Msg of string ]) result
-  (** [of_json json] converts the JSON to a GeoJSON object (a type {!t}) or an
+  (** [of_json json] converts the JSON to a topojson object (a type {!t}) or an
       error. *)
-
-  val to_json : t -> json
-  (** [to_json g] converts the GeoJSON object [g] to JSON *)
 end
 
 module type Topojson = sig
