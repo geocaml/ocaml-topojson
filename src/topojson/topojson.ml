@@ -334,7 +334,7 @@ module Make (J : Intf.Json) = struct
               (decode_or_err (J.to_array (decode_or_err J.to_float)))
               arcs
           in
-          { objects; arcs }
+          Ok { objects; arcs }
       | _, _ -> Error (`Msg "No objects and/or arcs field in Topology object!")
   end
 
