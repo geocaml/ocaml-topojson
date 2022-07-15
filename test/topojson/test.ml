@@ -44,6 +44,6 @@ module Topojson = Topojson.Make (Ezjsonm_parser)
 let () =
   let json = read_file "./test/topojson/test_cases/files/exemplar.json" in
   match Topojson.of_json (Ezjsonm.value_from_string json) with
-  | Ok { Topojson.Topology.objects } ->
+  | Ok (Topology { Topojson.Topology.objects; arcs }) ->
       List.iter (fun (k, _v) -> print_endline k) objects
   | Error (`Msg m) -> failwith m
