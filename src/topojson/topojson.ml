@@ -43,7 +43,7 @@ module Make (J : Intf.Json) = struct
           | t when t = typ -> p_c coords
           | t -> Error (`Msg ("Expected type of `" ^ typ ^ "' but got " ^ t)))
 
-    let parse_by_type json p_a typ =
+    let parse_by_arcs json p_a typ =
       match (J.find json [ "type" ], J.find json [ "arcs" ]) with
       | None, _ ->
           Error
@@ -138,7 +138,7 @@ module Make (J : Intf.Json) = struct
       let typ = "LineString"
       let v arc = arc
       let parse_arcs arcs = J.to_array (decode_or_err J.to_int) arcs
-      let base_of_json json = parse_by_type json parse_arcs typ
+      let base_of_json json = parse_by_arcs json parse_arcs typ
 
       let to_json ?bbox ?(foreign_members = []) arc =
         J.obj
@@ -157,7 +157,7 @@ module Make (J : Intf.Json) = struct
         try J.to_array (decode_or_err LineString.parse_arcs) arcs
         with Failure m -> Error (`Msg m)
 
-      let base_of_json json = parse_by_type json parse_arcs typ
+      let base_of_json json = parse_by_arcs json parse_arcs typ
 
       let to_json ?bbox ?(foreign_members = []) arcs =
         J.obj
@@ -180,7 +180,7 @@ module Make (J : Intf.Json) = struct
           J.to_array (decode_or_err (J.to_array (decode_or_err J.to_int))) arcs
         with Failure m -> Error (`Msg m)
 
-      let base_of_json json = parse_by_type json parse_arcs typ
+      let base_of_json json = parse_by_arcs json parse_arcs typ
 
       let to_json ?bbox ?(foreign_members = []) arcs =
         J.obj
@@ -200,7 +200,7 @@ module Make (J : Intf.Json) = struct
         try J.to_array (decode_or_err Polygon.parse_arcs) arcs
         with Failure m -> Error (`Msg m)
 
-      let base_of_json json = parse_by_type json parse_arcs typ
+      let base_of_json json = parse_by_arcs json parse_arcs typ
 
       let to_json ?bbox ?(foreign_members = []) arcs =
         J.obj
@@ -297,7 +297,7 @@ module Make (J : Intf.Json) = struct
       | Error _ -> []
 
     type t = {
-      objects : (string * json) list;
+      objects : (string * Geometry.t) list;
       arcs : Geometry.Position.t array array;
     }
 
@@ -305,6 +305,9 @@ module Make (J : Intf.Json) = struct
       match (J.find json [ "objects" ], J.find json [ "arcs" ]) with
       | Some objects, Some arcs ->
           let* objects = J.to_obj objects in
+          let geometries =
+            List.map (fun (k, v) -> (k, Geometry.base_of_json v)) objects
+          in
           let* arcs =
             J.to_array
               (decode_or_err
@@ -322,7 +325,8 @@ module Make (J : Intf.Json) = struct
     match J.find json [ "type" ] with
     | Some typ -> (
         match J.to_string typ with
-        | Ok "Topology" -> Topology.of_json json
+        | Ok "Topology" ->
+            Ok (Topology (Result.get_ok @@ Topology.of_json json))
         | Ok s -> Error (`Msg ("Expected `Topology` but got " ^ s))
         | Error _ as e -> e)
     | None -> Error (`Msg "Could not find Topology type")
