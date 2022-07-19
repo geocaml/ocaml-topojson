@@ -297,7 +297,7 @@ module Make (J : Intf.Json) = struct
       | Error _ -> []
 
     type t = {
-      objects : (string * Geometry.t) list;
+      objects : (string * (Geometry.t, [ `Msg of string ]) result) list;
       arcs : Geometry.Position.t array array;
     }
 
@@ -305,7 +305,7 @@ module Make (J : Intf.Json) = struct
       match (J.find json [ "objects" ], J.find json [ "arcs" ]) with
       | Some objects, Some arcs ->
           let* objects = J.to_obj objects in
-          let geometries =
+          let objects =
             List.map (fun (k, v) -> (k, Geometry.base_of_json v)) objects
           in
           let* arcs =

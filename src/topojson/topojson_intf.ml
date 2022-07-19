@@ -182,7 +182,7 @@ module type Topology = sig
   module Geometry : Geometry with type json = json
 
   type t = {
-    objects : (string * Geometry.t) list;
+    objects : (string * (Geometry.t, [ `Msg of string ]) result) list;
     arcs : Geometry.Position.t array array;
   }
 end
@@ -196,7 +196,7 @@ module type S = sig
   (* module Topology : Topology with type json = json *)
   module Topology : sig
     type t = {
-      objects : (string * Geometry.t) list;
+      objects : (string * (Geometry.t, [ `Msg of string ]) result) list;
       arcs : Geometry.Position.t array array;
     }
   end
