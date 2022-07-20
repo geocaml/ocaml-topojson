@@ -1,3 +1,0 @@
-pin-depends: [
-  ["ocaml-geojson" "git+https://github.com/geocaml/ocaml-geojson"]
-]

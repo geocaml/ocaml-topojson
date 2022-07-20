@@ -36,3 +36,6 @@ build: [
   ["dune" "install" "-p" name "--create-install-files" name]
 ]
 dev-repo: "git+https://github.com/patricoferris/ocaml-topojson.git"
+pin-depends: [
+  ["geojson.dev" "git+https://github.com/geocaml/ocaml-geojson"]
+]

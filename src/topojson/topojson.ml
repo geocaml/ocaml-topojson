@@ -288,6 +288,12 @@ module Make (J : Intf.Json) = struct
   module Topology = struct
     type json = J.t
 
+    type t = {
+      objects : (string * Geometry.t) list;
+      arcs : Geometry.Position.t array array;
+      foreign_members : (string * json) list;
+    }
+
     let keys_in_use = [ "type"; "arcs"; "objects"; "transform"; "bbox" ]
 
     let foreign_members json =
@@ -296,17 +302,14 @@ module Make (J : Intf.Json) = struct
           List.filter (fun (k, _v) -> not (List.mem k keys_in_use)) assoc
       | Error _ -> []
 
-    type t = {
-      objects : (string * (Geometry.t, [ `Msg of string ]) result) list;
-      arcs : Geometry.Position.t array array;
-    }
-
-    let of_json json =
+    let base_of_json json =
       match (J.find json [ "objects" ], J.find json [ "arcs" ]) with
       | Some objects, Some arcs ->
           let* objects = J.to_obj objects in
-          let objects =
-            List.map (fun (k, v) -> (k, Geometry.base_of_json v)) objects
+          let geometries =
+            List.map
+              (fun (k, v) -> (k, decode_or_err Geometry.base_of_json v))
+              objects
           in
           let* arcs =
             J.to_array
@@ -315,19 +318,45 @@ module Make (J : Intf.Json) = struct
                     (decode_or_err (J.to_array (decode_or_err J.to_float)))))
               arcs
           in
-          Ok { objects; arcs }
+          let fm = foreign_members json in
+          Ok { objects = geometries; arcs; foreign_members = fm }
       | _, _ -> Error (`Msg "No objects and/or arcs field in Topology object!")
+
+    let to_json ?bbox { objects; arcs; foreign_members } =
+      J.obj
+        ([
+           ("type", J.string "Topology");
+           ("objects", J.obj objects);
+           ("arcs", J.array (J.array (J.array J.float)) arcs);
+         ]
+        @ bbox_to_json_or_empty bbox
+        @ foreign_members)
   end
 
-  type t = Topology of Topology.t | Geometry of Geometry.t
+  type topojson = Topology of Topology.t | Geometry of Geometry.t
+  and t = { topojson : topojson; bbox : float array option }
+
+  let topojson_to_t tjson bbox = { topojson = tjson; bbox }
+
+  let json_to_bbox json =
+    match J.to_array (decode_or_err J.to_float) json with
+    | Ok v -> Some v
+    | Error _ -> None
 
   let of_json json =
-    match J.find json [ "type" ] with
-    | Some typ -> (
+    match (J.find json [ "type" ], J.find json [ "bbox" ]) with
+    | Some typ, bbx -> (
         match J.to_string typ with
-        | Ok "Topology" ->
-            Ok (Topology (Result.get_ok @@ Topology.of_json json))
+        | Ok "Topology" -> (
+            match Topology.base_of_json json with
+            | Ok v ->
+                Ok (topojson_to_t (Topology v) @@ Option.bind bbx json_to_bbox)
+            | Error e -> Error e)
         | Ok s -> Error (`Msg ("Expected `Topology` but got " ^ s))
         | Error _ as e -> e)
-    | None -> Error (`Msg "Could not find Topology type")
+    | None, _ -> Error (`Msg "Could not find Topology type")
+
+  let to_json = function
+    | { topojson = Topology f; bbox } -> Topology.to_json ?bbox f
+    | { topojson = Geometry g; bbox } -> Geometry.to_json ?bbox g
 end

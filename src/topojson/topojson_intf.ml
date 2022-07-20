@@ -182,9 +182,12 @@ module type Topology = sig
   module Geometry : Geometry with type json = json
 
   type t = {
-    objects : (string * (Geometry.t, [ `Msg of string ]) result) list;
+    objects : (string * Geometry.t) list;
     arcs : Geometry.Position.t array array;
+    foreign_members : (string * json) list;
   }
+
+  include Json_conv with type t := t and type json := json
 end
 
 module type S = sig
@@ -196,17 +199,23 @@ module type S = sig
   (* module Topology : Topology with type json = json *)
   module Topology : sig
     type t = {
-      objects : (string * (Geometry.t, [ `Msg of string ]) result) list;
+      objects : (string * Geometry.t) list;
       arcs : Geometry.Position.t array array;
+      foreign_members : (string * json) list;
     }
+
+    include Json_conv with type t := t and type json := json
   end
 
   (* type topojson = Topology of Topology.t | Geometry of Geometry.t *)
-  type t = Topology of Topology.t | Geometry of Geometry.t
+  type topojson = Topology of Topology.t | Geometry of Geometry.t
+  type t
 
   val of_json : json -> (t, [ `Msg of string ]) result
   (** [of_json json] converts the JSON to a topojson object (a type {!t}) or an
       error. *)
+
+  val to_json : t -> json
 end
 
 module type Topojson = sig
