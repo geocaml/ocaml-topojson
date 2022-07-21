@@ -326,7 +326,8 @@ module Make (J : Intf.Json) = struct
       J.obj
         ([
            ("type", J.string "Topology");
-           ("objects", J.obj objects);
+           ( "objects",
+             J.obj (List.map (fun (k, v) -> (k, Geometry.to_json v)) objects) );
            ("arcs", J.array (J.array (J.array J.float)) arcs);
          ]
         @ bbox_to_json_or_empty bbox

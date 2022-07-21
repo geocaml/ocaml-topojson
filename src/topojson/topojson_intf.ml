@@ -207,7 +207,6 @@ module type S = sig
     include Json_conv with type t := t and type json := json
   end
 
-  (* type topojson = Topology of Topology.t | Geometry of Geometry.t *)
   type topojson = Topology of Topology.t | Geometry of Geometry.t
   type t
 
