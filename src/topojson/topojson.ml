@@ -20,7 +20,8 @@ module Make (J : Intf.Json) = struct
   module Geometry = struct
     type json = J.t
 
-    let keys_in_use = [ "type"; "coordinates"; "bbox"; "arcs"; "id" ]
+    let keys_in_use =
+      [ "type"; "properties"; "coordinates"; "bbox"; "arcs"; "id"; "objects" ]
 
     let foreign_members json =
       match J.to_obj json with
@@ -294,7 +295,16 @@ module Make (J : Intf.Json) = struct
       foreign_members : (string * json) list;
     }
 
-    let keys_in_use = [ "type"; "arcs"; "objects"; "transform"; "bbox" ]
+    let keys_in_use =
+      [
+        "type";
+        "arcs";
+        "objects";
+        "transform";
+        "bbox";
+        "properties";
+        "coordinates";
+      ]
 
     let foreign_members json =
       match J.to_obj json with
@@ -335,8 +345,10 @@ module Make (J : Intf.Json) = struct
   end
 
   type topojson = Topology of Topology.t | Geometry of Geometry.t
-  and t = { topojson : topojson; bbox : float array option }
+  type t = { topojson : topojson; bbox : float array option }
 
+  let topojson t = t.topojson
+  let bbox t = t.bbox
   let topojson_to_t tjson bbox = { topojson = tjson; bbox }
 
   let json_to_bbox json =

@@ -195,6 +195,9 @@ module type S = sig
   type topojson = Topology of Topology.t | Geometry of Geometry.t
   type t
 
+  val topojson : t -> topojson
+  val bbox : t -> float array option
+
   val of_json : json -> (t, [ `Msg of string ]) result
   (** [of_json json] converts the JSON to a topojson object (a type {!t}) or an
       error. *)
