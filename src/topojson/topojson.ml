@@ -335,8 +335,10 @@ module Make (J : Intf.Json) = struct
   end
 
   type topojson = Topology of Topology.t | Geometry of Geometry.t
-  and t = { topojson : topojson; bbox : float array option }
+  type t = { topojson : topojson; bbox : float array option }
 
+  let topojson t = t.topojson
+  let bbox t = t.bbox
   let topojson_to_t tjson bbox = { topojson = tjson; bbox }
 
   let json_to_bbox json =

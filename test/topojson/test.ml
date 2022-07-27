@@ -41,14 +41,58 @@ end
 
 module Topojson = Topojson.Make (Ezjsonm_parser)
 
-let () =
+let expected_arcs =
+  let open Topojson in
+  let pos arr = Geometry.Position.v ~lat:arr.(1) ~lng:arr.(0) () in
+  Array.map (Array.map pos)
+    [|
+      [| [| 102.; 0. |]; [| 103.; 1. |]; [| 104.; 0. |]; [| 105.; 1. |] |];
+      [|
+        [| 100.; 0. |];
+        [| 101.; 0. |];
+        [| 101.; 1. |];
+        [| 100.; 1. |];
+        [| 100.; 0. |];
+      |];
+    |]
+
+let pp_position ppf v =
+  let open Topojson.Geometry in
+  let lat = Position.lat v in
+  let lng = Position.lng v in
+  Fmt.pf ppf "[%f, %f]" lat lng
+
+let position = Alcotest.testable pp_position Stdlib.( = )
+let msg = Alcotest.testable (fun ppf (`Msg m) -> Fmt.pf ppf "%s" m) Stdlib.( = )
+
+let pp_topojson ppf v =
+  Fmt.pf ppf "%s" (Ezjsonm.value_to_string @@ Topojson.to_json v)
+
+let topojson = Alcotest.testable pp_topojson Stdlib.( = )
+
+let ezjsonm =
+  Alcotest.testable
+    (fun ppf t -> Fmt.pf ppf "%s" (Ezjsonm.value_to_string t))
+    Stdlib.( = )
+
+let main () =
   let s = read_file "./test_cases/files/exemplar.json" in
   let json = Ezjsonm.value_from_string s in
   let topojson_obj = Topojson.of_json json in
-  match topojson_obj with
-  | Ok v -> (
-      match Topojson.to_json v with
-      | Topojson.Topology f -> v
-      | _ -> assert false)
-  | _ -> assert false
-  | Error (`Msg m) -> failwith m
+  match (topojson_obj, Result.map Topojson.topojson topojson_obj) with
+  | Ok t, Ok (Topojson.Topology f) ->
+      (* Here we check that the arcs defined in the file are the same as the ones
+         we hardcoded above *)
+      Alcotest.(check (array (array position))) "same arcs" f.arcs expected_arcs;
+      (* Then we check that converting the Topojson OCaml value to JSON and then back
+         again produces the same Topojson OCaml value. *)
+      let output_json = Topojson.to_json t in
+      Alcotest.(check ezjsonm) "same ezjsonm" json output_json;
+      Alcotest.(check (result topojson msg))
+        "same topojson" topojson_obj
+        (Topojson.of_json output_json)
+  | Ok _, Ok (Topojson.Geometry _) -> assert false
+  | Error (`Msg m), _ -> failwith m
+  | _, Error (`Msg m) -> failwith m
+
+let () = Alcotest.run "topojson" [ ("parsing", [ ("simple", `Quick, main) ]) ]
