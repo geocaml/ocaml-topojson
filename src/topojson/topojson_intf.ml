@@ -167,7 +167,18 @@ module type Geometry = sig
     | MultiPolygon of MultiPolygon.t
     | Collection of t list
 
-  and t = geometry * (string * json) list
+  and t = {
+    geometry : geometry;
+    properties : (string * json) list;
+    foreign_members : (string * json) list;
+  }
+
+  val properties : t -> (string * json) list
+
+  val g :
+    ?properties:(string * json) list ->
+    ?foreign_members:(string * json) list ->
+    t
 
   val foreign_members : t -> (string * json) list
   (** [foreign_members t] will extract name/value pair of a foreign member from
