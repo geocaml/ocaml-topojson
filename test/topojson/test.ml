@@ -48,7 +48,7 @@ let () =
   match topojson_obj with
   | Ok v -> (
       match Topojson.to_json v with
-      | (Topology f,[]) -> (v,f)
+      | Topojson.Topology f -> v
       | _ -> assert false)
   | _ -> assert false
   | Error (`Msg m) -> failwith m

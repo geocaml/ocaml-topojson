@@ -176,27 +176,12 @@ module type Geometry = sig
   include Json_conv with type t := t and type json := json
 end
 
-module type Topology = sig
-  type json
-
-  module Geometry : Geometry with type json = json
-
-  type t = {
-    objects : (string * Geometry.t) list;
-    arcs : Geometry.Position.t array array;
-    foreign_members : (string * json) list;
-  }
-
-  include Json_conv with type t := t and type json := json
-end
-
 module type S = sig
   type json
   (** The internal representation of JSON *)
 
   module Geometry : Geometry with type json = json
 
-  (* module Topology : Topology with type json = json *)
   module Topology : sig
     type t = {
       objects : (string * Geometry.t) list;
