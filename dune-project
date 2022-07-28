@@ -9,9 +9,9 @@
 
 (license MIT)
 
-(authors "Patrick Ferris")
+(authors "Patrick Ferris" "Jay Dev Jha")
 
-(maintainers "pf341@patricoferris.com")
+(maintainers "patrick@sirref.org")
 
 (package
  (name topojson)
@@ -20,9 +20,11 @@
   This library provides a functor for building a module for manipulating and parsing Topojson into OCaml.")
  (depends
    (brr :with-test)
+   (bos :with-test)
    (bechamel-notty (and (>= 0.1.0) :with-test))
    (alcotest :with-test)
-   (ezjsonm  :with-test)))
+   (ezjsonm  :with-test)
+   (geojson  :with-test)))
 
 (package
  (name topojsonm)
