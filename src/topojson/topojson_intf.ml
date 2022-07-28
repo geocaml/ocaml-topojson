@@ -184,6 +184,8 @@ module type Geometry = sig
   (** [foreign_members t] will extract name/value pair of a foreign member from
       t (a topojson object) *)
 
+  val geo_properties : t -> (string * json) list
+
   include Json_conv with type t := t and type json := json
 end
 

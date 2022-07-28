@@ -38,6 +38,9 @@ module Make (J : Intf.Json) = struct
           List.filter (fun (k, _v) -> not (List.mem k keys_in_use)) assoc
       | Error _ -> []
 
+    let geo_properties properties =
+      if properties = [] then [] else [ ("properties", J.obj properties) ]
+
     let parse_by_type json p_c typ =
       match (J.find json [ "type" ], J.find json [ "coordinates" ]) with
       | None, _ ->
@@ -117,8 +120,7 @@ module Make (J : Intf.Json) = struct
            ]
           @ bbox_to_json_or_empty bbox
           @ foreign_members
-          @ if properties = [] then [] else [ ("properties", J.obj properties) ]
-          )
+          @ geo_properties properties)
     end
 
     module MultiPoint = struct
@@ -142,8 +144,7 @@ module Make (J : Intf.Json) = struct
            ]
           @ bbox_to_json_or_empty bbox
           @ foreign_members
-          @ if properties = [] then [] else [ ("properties", J.obj properties) ]
-          )
+          @ geo_properties properties)
     end
 
     module LineString = struct
@@ -159,8 +160,7 @@ module Make (J : Intf.Json) = struct
           ([ ("type", J.string typ); ("arcs", Arcs.to_json arc) ]
           @ bbox_to_json_or_empty bbox
           @ foreign_members
-          @ if properties = [] then [] else [ ("properties", J.obj properties) ]
-          )
+          @ geo_properties properties)
     end
 
     module MultiLineString = struct
@@ -180,8 +180,7 @@ module Make (J : Intf.Json) = struct
           ([ ("type", J.string typ); ("arcs", J.array Arcs.to_json arcs) ]
           @ bbox_to_json_or_empty bbox
           @ foreign_members
-          @ if properties = [] then [] else [ ("properties", J.obj properties) ]
-          )
+          @ geo_properties properties)
     end
 
     module Polygon = struct
@@ -205,8 +204,7 @@ module Make (J : Intf.Json) = struct
           ([ ("type", J.string typ); ("arcs", J.array (J.array J.int) arcs) ]
           @ bbox_to_json_or_empty bbox
           @ foreign_members
-          @ if properties = [] then [] else [ ("properties", J.obj properties) ]
-          )
+          @ geo_properties properties)
     end
 
     module MultiPolygon = struct
@@ -230,8 +228,7 @@ module Make (J : Intf.Json) = struct
            ]
           @ bbox_to_json_or_empty bbox
           @ foreign_members
-          @ if properties = [] then [] else [ ("properties", J.obj properties) ]
-          )
+          @ geo_properties properties)
     end
 
     type geometry =
@@ -253,11 +250,10 @@ module Make (J : Intf.Json) = struct
       { geometry = geo; properties; foreign_members }
 
     let geometry t = t.geometry
-    let properties t = t.properties
 
     let rec base_of_json json =
       let fm = foreign_members json in
-      let props = properties t.properties in
+      let props = geo_properties properties in
       match J.find json [ "type" ] with
       | Some typ -> (
           match J.to_string typ with
@@ -333,20 +329,27 @@ module Make (J : Intf.Json) = struct
             (`Msg
               "A Geojson text should contain one object with a member `type`.")
 
-    let rec to_json ?bbox = function
-      | Point point, foreign_members, properties ->
-          Point.to_json ?bbox ~foreign_members ~properties point
-      | MultiPoint mp, foreign_members, properties ->
-          MultiPoint.to_json ?bbox ~foreign_members ~properties mp
-      | LineString ls, foreign_members, properties ->
-          LineString.to_json ?bbox ~foreign_members ~properties ls
-      | MultiLineString mls, foreign_members, properties ->
-          MultiLineString.to_json ?bbox ~foreign_members ~properties mls
-      | Polygon p, foreign_members, properties ->
-          Polygon.to_json ?bbox ~foreign_members ~propertiesp
-      | MultiPolygon mp, foreign_members, properties ->
-          MultiPolygon.to_json ?bbox ~foreign_members mp
-      | Collection c, foreign_members, properties ->
+    let rec to_json ?bbox t =
+      match t.geometry with
+      | Point point ->
+          Point.to_json ?bbox ~foreign_members:t.foreign_members
+            ~properties:t.properties point
+      | MultiPoint mp ->
+          MultiPoint.to_json ?bbox ~foreign_members:t.foreign_members
+            ~properties:t.properties mp
+      | LineString ls ->
+          LineString.to_json ?bbox ~foreign_members:t.foreign_members
+            ~properties:t.properties ls
+      | MultiLineString mls ->
+          MultiLineString.to_json ?bbox ~foreign_members:t.foreign_members
+            ~properties:t.properties mls
+      | Polygon p ->
+          Polygon.to_json ?bbox ~foreign_members:t.foreign_members
+            ~properties:t.properties p
+      | MultiPolygon mp ->
+          MultiPolygon.to_json ?bbox ~foreign_members:t.foreign_members
+            ~properties:t.properties mp
+      | Collection c ->
           J.obj
             ([
                ("type", J.string "GeometryCollection");
@@ -354,9 +357,10 @@ module Make (J : Intf.Json) = struct
              ]
             @ bbox_to_json_or_empty bbox
             @ foreign_members
-            @ properties)
+            @ geo_properties)
 
     let foreign_members (_, fm) = fm
+    let geo_properties (_, props) = props
   end
 
   module Topology = struct
