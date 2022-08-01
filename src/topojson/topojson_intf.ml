@@ -169,7 +169,7 @@ module type Geometry = sig
 
   and t = {
     geometry : geometry;
-    properties : json option;
+    properties : ((string * json) list ) option;
     foreign_members : (string * json) list;
   }
 
