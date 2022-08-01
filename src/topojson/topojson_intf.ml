@@ -169,22 +169,16 @@ module type Geometry = sig
 
   and t = {
     geometry : geometry;
-    properties : (string * json) list;
+    properties : json option;
     foreign_members : (string * json) list;
   }
 
-  val properties : t -> (string * json) list
-
-  val g :
-    ?properties:(string * json) list ->
-    ?foreign_members:(string * json) list ->
-    t
+  val properties : t -> json option
+  val g : ?properties:json -> ?foreign_members:(string * json) list -> t
 
   val foreign_members : t -> (string * json) list
   (** [foreign_members t] will extract name/value pair of a foreign member from
       t (a topojson object) *)
-
-  val geo_properties : t -> (string * json) list
 
   include Json_conv with type t := t and type json := json
 end
