@@ -19,6 +19,12 @@ module Make (J : Intf.Json) = struct
 
   module Geometry = struct
     type json = J.t
+    type properties = [ `None | `Null | `Obj of (string * json) list ]
+
+    let properties_or_null = function
+      | `None -> []
+      | `Null -> [ ("properties", J.null) ]
+      | `Obj v -> [ ("properties", J.obj v) ]
 
     let keys_in_use =
       [
@@ -32,7 +38,7 @@ module Make (J : Intf.Json) = struct
         "geometries";
       ]
 
-    let foreign_members json =
+    let foreign_members_of_json json =
       match J.to_obj json with
       | Ok assoc ->
           List.filter (fun (k, _v) -> not (List.mem k keys_in_use)) assoc
@@ -110,13 +116,12 @@ module Make (J : Intf.Json) = struct
       let parse_coords coords = J.to_array (decode_or_err J.to_float) coords
       let base_of_json json = parse_by_type json parse_coords typ
 
-      let to_json ?bbox ?properties ?(foreign_members = []) position =
+      let to_json ?bbox ?(properties = `None) ?(foreign_members = []) position =
         J.obj
           ([
-             ("type", J.string typ);
-             ("coordinates", Position.to_json position);
-             ("properties", Option.(value ~default:J.null properties));
+             ("type", J.string typ); ("coordinates", Position.to_json position);
            ]
+          @ properties_or_null properties
           @ bbox_to_json_or_empty bbox
           @ foreign_members)
     end
@@ -134,13 +139,14 @@ module Make (J : Intf.Json) = struct
 
       let base_of_json json = parse_by_type json parse_coords typ
 
-      let to_json ?bbox ?properties ?(foreign_members = []) positions =
+      let to_json ?bbox ?(properties = `None) ?(foreign_members = []) positions
+          =
         J.obj
           ([
              ("type", J.string typ);
              ("coordinates", J.array Position.to_json positions);
-             ("properties", Option.(value ~default:J.null properties));
            ]
+          @ properties_or_null properties
           @ bbox_to_json_or_empty bbox
           @ foreign_members)
     end
@@ -153,13 +159,10 @@ module Make (J : Intf.Json) = struct
       let parse_arcs arcs = J.to_array (decode_or_err J.to_int) arcs
       let base_of_json json = parse_by_arcs json parse_arcs typ
 
-      let to_json ?bbox ?properties ?(foreign_members = []) arc =
+      let to_json ?bbox ?(properties = `None) ?(foreign_members = []) arc =
         J.obj
-          ([
-             ("type", J.string typ);
-             ("arcs", Arcs.to_json arc);
-             ("properties", Option.(value ~default:J.null properties));
-           ]
+          ([ ("type", J.string typ); ("arcs", Arcs.to_json arc) ]
+          @ properties_or_null properties
           @ bbox_to_json_or_empty bbox
           @ foreign_members)
     end
@@ -176,13 +179,10 @@ module Make (J : Intf.Json) = struct
 
       let base_of_json json = parse_by_arcs json parse_arcs typ
 
-      let to_json ?bbox ?properties ?(foreign_members = []) arcs =
+      let to_json ?bbox ?(properties = `None) ?(foreign_members = []) arcs =
         J.obj
-          ([
-             ("type", J.string typ);
-             ("arcs", J.array Arcs.to_json arcs);
-             ("properties", Option.(value ~default:J.null properties));
-           ]
+          ([ ("type", J.string typ); ("arcs", J.array Arcs.to_json arcs) ]
+          @ properties_or_null properties
           @ bbox_to_json_or_empty bbox
           @ foreign_members)
     end
@@ -203,13 +203,10 @@ module Make (J : Intf.Json) = struct
 
       let base_of_json json = parse_by_arcs json parse_arcs typ
 
-      let to_json ?bbox ?properties ?(foreign_members = []) arcs =
+      let to_json ?bbox ?(properties = `None) ?(foreign_members = []) arcs =
         J.obj
-          ([
-             ("type", J.string typ);
-             ("arcs", J.array (J.array J.int) arcs);
-             ("properties", Option.(value ~default:J.null properties));
-           ]
+          ([ ("type", J.string typ); ("arcs", J.array (J.array J.int) arcs) ]
+          @ properties_or_null properties
           @ bbox_to_json_or_empty bbox
           @ foreign_members)
     end
@@ -227,13 +224,13 @@ module Make (J : Intf.Json) = struct
 
       let base_of_json json = parse_by_arcs json parse_arcs typ
 
-      let to_json ?bbox ?properties ?(foreign_members = []) arcs =
+      let to_json ?bbox ?(properties = `None) ?(foreign_members = []) arcs =
         J.obj
           ([
              ("type", J.string typ);
              ("arcs", J.array (J.array (J.array J.int)) arcs);
-             ("properties", Option.(value ~default:J.null properties));
            ]
+          @ properties_or_null properties
           @ bbox_to_json_or_empty bbox
           @ foreign_members)
     end
@@ -249,20 +246,27 @@ module Make (J : Intf.Json) = struct
 
     and t = {
       geometry : geometry;
-      properties : ((string * json) list) option;
+      properties : properties;
       foreign_members : (string * json) list;
     }
 
-    let g ?properties ?(foreign_members = []) geo =
+    let v ?(properties = `None) ?(foreign_members = []) geo =
       { geometry = geo; properties; foreign_members }
 
     let geometry t = t.geometry
     let properties t = t.properties
+    let foreign_members t = t.foreign_members
+
+    let properties_of_json json =
+      match J.find json [ "properties" ] with
+      | Some j -> if J.is_null j then `Null else `Obj (decode_or_err J.to_obj j)
+      | None -> `None
 
     let rec base_of_json json =
-      let fm = foreign_members json in
-      match (J.find json [ "type" ], J.find json [ "properties" ]) with
-      | Some typ, properties -> (
+      let fm = foreign_members_of_json json in
+      let properties = properties_of_json json in
+      match J.find json [ "type" ] with
+      | Some typ -> (
           match J.to_string typ with
           | Ok "Point" ->
               Result.map (fun g ->
@@ -277,7 +281,7 @@ module Make (J : Intf.Json) = struct
                   { geometry = LineString g; properties; foreign_members = fm })
               @@ LineString.base_of_json json
           | Ok "MultiLineString" ->
-              Result.map (fun v ->
+              Result.map (fun g ->
                   {
                     geometry = MultiLineString g;
                     properties;
@@ -315,10 +319,10 @@ module Make (J : Intf.Json) = struct
                        geometries"))
           | Ok typ -> Error (`Msg ("Unknown type of geometry " ^ typ))
           | Error _ as e -> e)
-      | None, _ ->
+      | None ->
           Error
             (`Msg
-              "A Geojson text should contain one object with a member `type`.")
+              "A TopoJSON text should contain one object with a member `type`.")
 
     let rec to_json ?bbox t =
       match t.geometry with
@@ -346,12 +350,9 @@ module Make (J : Intf.Json) = struct
                ("type", J.string "GeometryCollection");
                ("geometries", J.list to_json c);
              ]
+            @ properties_or_null t.properties
             @ bbox_to_json_or_empty bbox
-            @ foreign_members
-            @ geo_properties properties)
-
-    let foreign_members (_, fm) = fm
-    let geo_properties (_, props) = props
+            @ t.foreign_members)
   end
 
   module Topology = struct
@@ -375,7 +376,7 @@ module Make (J : Intf.Json) = struct
         "geometries";
       ]
 
-    let foreign_members json =
+    let foreign_members_of_json json =
       match J.to_obj json with
       | Ok assoc ->
           List.filter (fun (k, _v) -> not (List.mem k keys_in_use)) assoc
@@ -397,7 +398,7 @@ module Make (J : Intf.Json) = struct
                     (decode_or_err (J.to_array (decode_or_err J.to_float)))))
               arcs
           in
-          let fm = foreign_members json in
+          let fm = foreign_members_of_json json in
           Ok { objects = geometries; arcs; foreign_members = fm }
       | _, _ -> Error (`Msg "No objects and/or arcs field in Topology object!")
 

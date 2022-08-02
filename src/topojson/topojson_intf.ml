@@ -167,18 +167,30 @@ module type Geometry = sig
     | MultiPolygon of MultiPolygon.t
     | Collection of t list
 
-  and t = {
-    geometry : geometry;
-    properties : ((string * json) list ) option;
-    foreign_members : (string * json) list;
-  }
+  and properties = [ `None | `Null | `Obj of (string * json) list ]
+  (** The properties associated with a Geometry object can be left out
+      ([`None]), could be specifically a null value ([`Null]) or an object. *)
 
-  val properties : t -> json option
-  val g : ?properties:json -> ?foreign_members:(string * json) list -> t
+  and t
+
+  val properties : t -> properties
+  (** [properties t] returns the properties associated with a given object. If
+      there aren't any this returns [`None]. The empty list is the empty object
+      [{}]. *)
+
+  val geometry : t -> geometry
+  (** [geometry t] returns the geometry associated with the object. *)
 
   val foreign_members : t -> (string * json) list
-  (** [foreign_members t] will extract name/value pair of a foreign member from
-      t (a topojson object) *)
+  (** [foreign_members t] will extract the name-value pairs from an object that
+      are not a part of the TopoJSON specification. *)
+
+  val v :
+    ?properties:properties ->
+    ?foreign_members:(string * json) list ->
+    geometry ->
+    t
+  (** Creates a new Geometry object. *)
 
   include Json_conv with type t := t and type json := json
 end

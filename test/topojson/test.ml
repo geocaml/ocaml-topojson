@@ -1,5 +1,4 @@
 (* Tests to validate implemented functions/ modules  *)
-
 let read_file f =
   let ic = open_in f in
   let rec loop acc =
@@ -56,10 +55,10 @@ let expected_arcs =
       |];
     |]
 
-let pp_position ppf v =
+let pp_position ppf t =
   let open Topojson.Geometry in
-  let lat = Position.lat v in
-  let lng = Position.lng v in
+  let lat = Position.lat t in
+  let lng = Position.lng t in
   Fmt.pf ppf "[%f, %f]" lat lng
 
 let position = Alcotest.testable pp_position Stdlib.( = )
@@ -70,10 +69,33 @@ let pp_topojson ppf v =
 
 let topojson = Alcotest.testable pp_topojson Stdlib.( = )
 
+(* Comparing two JSON objects encoded using Ezjsonm -- might be useful to upstream this
+   at some point. This deals with the fact that two object association lists could have
+   a different key-value ordering. *)
+let rec ezjsonm_equal a b =
+  match (a, b) with
+  | `Null, `Null -> true
+  | `Float a, `Float b -> Float.equal a b
+  | `String a, `String b -> String.equal a b
+  | `Bool a, `Bool b -> Bool.equal a b
+  | `A xs, `A ys -> List.for_all2 ezjsonm_equal xs ys
+  | `O [], `O [] -> true
+  | `O ((k, v) :: xs), `O ys -> (
+      match List.assoc_opt k ys with
+      | None -> false
+      | Some v' ->
+          ezjsonm_equal v v' && ezjsonm_equal (`O xs) (`O (remove [] k ys)))
+  | _ -> false
+
+and remove acc k = function
+  | [] -> List.rev acc
+  | (k', _) :: rest when k = k' -> List.rev acc @ rest
+  | x :: rest -> remove (x :: acc) k rest
+
 let ezjsonm =
   Alcotest.testable
     (fun ppf t -> Fmt.pf ppf "%s" (Ezjsonm.value_to_string t))
-    Stdlib.( = )
+    ezjsonm_equal
 
 let main () =
   let s = read_file "./test_cases/files/exemplar.json" in
