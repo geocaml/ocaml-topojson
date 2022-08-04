@@ -13,19 +13,25 @@ let decode_or_err f v =
 module Make (J : Intf.Json) = struct
   type json = J.t
 
+  (* $MDX part-begin=bbox *)
   let bbox_to_json_or_empty bbox =
     Option.(
       if is_some bbox then [ ("bbox", J.array J.float (get bbox)) ] else [])
+  (* $MDX part-end *)
 
   module Geometry = struct
     type json = J.t
+
+    (* $MDX part-begin=properties *)
     type properties = [ `None | `Null | `Obj of (string * json) list ]
 
     let properties_or_null = function
       | `None -> []
       | `Null -> [ ("properties", J.null) ]
       | `Obj v -> [ ("properties", J.obj v) ]
+    (* $MDX part-end *)
 
+    (* $MDX part-begin=foreignMembers *)
     let keys_in_use =
       [
         "type";
@@ -43,6 +49,7 @@ module Make (J : Intf.Json) = struct
       | Ok assoc ->
           List.filter (fun (k, _v) -> not (List.mem k keys_in_use)) assoc
       | Error _ -> []
+    (* $MDX part-end *)
 
     let parse_by_type json p_c typ =
       match (J.find json [ "type" ], J.find json [ "coordinates" ]) with

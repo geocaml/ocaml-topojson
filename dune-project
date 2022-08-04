@@ -15,13 +15,13 @@
 
 (package
  (name topojson)
- (synopsis "OCaml library for Topojson")
- (description "TopoJSON is a JSON format that embedds geographic data structures into a shared topology.
-  This library provides a functor for building a module for manipulating and parsing Topojson into OCaml.")
+ (synopsis "A pure OCaml library for working with TopoJSON format")
+ (description "This library provides a functor for building a module for manipulating and parsing Topojson into OCaml.")
  (depends
    (brr :with-test)
    (bos :with-test)
    (bechamel-notty (and (>= 0.1.0) :with-test))
+   (mdx (and (>= 1.10.0) :with-test))
    (alcotest :with-test)
    (ezjsonm  :with-test)
    (geojson  :with-test)))
