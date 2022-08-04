@@ -42,17 +42,49 @@ Geometries in TopoJSON files are stitched together from shared line segments cal
   - Properties : A geometry object can also additionally have a member with the name “properties”. The value of the properties field is an object (any JSON object or a JSON null value).
 
 <!-- $MDX file=./src/topojson/topojson.ml,part=properties -->
+```ocaml
+    type properties = [ `None | `Null | `Obj of (string * json) list ]
+
+    let properties_or_null = function
+      | `None -> []
+      | `Null -> [ ("properties", J.null) ]
+      | `Obj v -> [ ("properties", J.obj v) ]
+```
 
 
 5. Additional members/ fields that are upholded by both the modules:
   - Bounding Box : To consist of information on the coordinate range for a  TopoJSON object may also have a member named “bbox”.
 
 <!-- $MDX file=./src/topojson/topojson.ml,part=bbox -->
+```ocaml
+  let bbox_to_json_or_empty bbox =
+    Option.(
+      if is_some bbox then [ ("bbox", J.array J.float (get bbox)) ] else [])
+```
 
 
   - Foreign Members : Members or field that are no longer defined in the specification but are used in the TopoJSON document. Semantics do not apply to these *foreign members* nd their descendants, irrespective of their names and values.
 
 <!-- $MDX file=./src/topojson/topojson.ml,part=foreignMembers -->
+```ocaml
+    let keys_in_use =
+      [
+        "type";
+        "properties";
+        "coordinates";
+        "bbox";
+        "arcs";
+        "id";
+        "objects";
+        "geometries";
+      ]
+
+    let foreign_members_of_json json =
+      match J.to_obj json with
+      | Ok assoc ->
+          List.filter (fun (k, _v) -> not (List.mem k keys_in_use)) assoc
+      | Error _ -> []
+```
 
 
 6. *Tranformation and Quantization* are yet to be implemented.
