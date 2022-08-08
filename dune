@@ -1,4 +1,8 @@
 (mdx
  (packages topojson)
+<<<<<<< HEAD
  (preludes doc/prelude.ml)
+=======
+ (preludes doc/prelude.txt)
+>>>>>>> Setup MDX example
  (files README.md))
