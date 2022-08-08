@@ -1,6 +1,5 @@
 # ocaml-topojson --- OCaml library to work with TopoJSON Format Specification
 
-__Abstract__
 
 A collection of libraries for _parsing, constructing, and manipulating_ TopoJSON objects.
 
@@ -17,7 +16,7 @@ A collection of libraries for _parsing, constructing, and manipulating_ TopoJSON
 
 
 ## Introduction
-TopoJSON is an enhanced format for encoding GeoJSON geospatial data. In addition to the GeoJSON geometry types, viz. "Point", "LineString", "Polygon", "MultiPoint", "MultiLineString", "MultiPolygon", and "GeometryCollection", TopoJSON instigates a very new type "Topology", which comprises of GeoJSON objects. A _topology_ has a field `objects` mapped with one or more geometry objects by its name type. 
+TopoJSON is an enhanced format for encoding GeoJSON geospatial data. In addition to the GeoJSON geometry types, viz. "Point", "LineString", "Polygon", "MultiPoint", "MultiLineString", "MultiPolygon", and "GeometryCollection", TopoJSON instigates a new type "Topology", which comprises of GeoJSON objects. A _topology_ has a field `objects` mapped with one or more geometry objects by its name type. 
 
 ### TopoJSON Vs GeoJSON
 TopoJSON has an `arcs` member which consists of the `coordinates` of the geometry types (except "Point" and "MultiPoint"). The value of the _"arcs"_ member is an array of arrays of positions. This is a primary advantage over GeoJSON objects where each individual geometries have their own separately defined coordinates.
@@ -27,7 +26,7 @@ See [TopoJSON Format Specification](https://github.com/topojson/topojson-specifi
 ## Motivation
 Currently OCaml's [GeoJSON Library](https://github.com/geocaml/ocaml-geojson) supports various types of geometry objects as being laid down by the [IETF RFC 7946 - The GeoJSON Format Specification](https://www.rfc-editor.org/rfc/rfc7946.html). A similar sort of library is being implemented to  support *topojson specification*. 
 
-TopoJSON helps to reduce the size of the geospatial data file in a way by eradicating the redundancy and eliminating the duplicate topology that is being shared by one or more geometries. For example, a common boundary that is being shared between two states/ countries can be represented only once and can be referenced multiple times.
+TopoJSON helps to reduce the size of the geospatial data file in a way by eradicating the redundancy and eliminating the duplicate topology that is being shared by one or more geometries. For example, a common boundary that is being shared between two states/countries can be represented only once and can be referenced multiple times.
 To know more about [TopoJSON](https://github.com/topojson/topojson) and its related advantages.
 
 ## Current status
