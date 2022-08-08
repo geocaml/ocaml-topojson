@@ -1,4 +1,4 @@
 (mdx
  (packages topojson)
- (preludes doc/prelude.ml)
+ (preludes doc/prelude.txt)
  (files README.md))
