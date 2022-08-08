@@ -1,27 +1,34 @@
-# ocaml-topojson -- OCaml library to work with TopoJSON Format Specification
+# ocaml-topojson --- OCaml library to work with TopoJSON Format Specification
 
 __Abstract__
 
-A set of libraries for parsing, constructing, and manipulating [TopoJSON](https://github.com/topojson/topojson-specification).
+A collection of libraries for _parsing, constructing, and manipulating_ TopoJSON objects.
 
 ## Contents
 
 * [Introduction](#introduction)
+  * [TopoJSON Vs GeoJSON](#topojson-vs-geojson)
 * [Motivation](#motivation)
 * [Current Status](#current-status)
   * [Platform Support](#platform-support)
   * [Feature Status](#feature-status)
 * [Structure of the Code](#structure-of-the-code)
+* [Examples](#examples)
 
 
 ## Introduction
-TopoJSON is a Javascript Object Notation (JSON) format used to represent common topology geographic data structures. TopoJSON, as a GeoJSON extension, supports the following geometry types: "Point", "LineString", "Polygon", "MultiPoint", "MultiLineString", "MultiPolygon", and "GeometryCollection". 
+TopoJSON is an enhanced format for encoding GeoJSON geospatial data. In addition to the GeoJSON geometry types, viz. "Point", "LineString", "Polygon", "MultiPoint", "MultiLineString", "MultiPolygon", and "GeometryCollection", TopoJSON instigates a very new type "Topology", which comprises of GeoJSON objects. A _topology_ has a field `objects` mapped with one or more geometry objects by its name type. 
 
-In comparison to geometry,wherein every form is encoded with separate (and regularly redundant) arrays of coordinates, a topology encodes sequences of coordinates in line fragments referred to as arcs that may be shared. For instance, the border between *Massachusetts and New Hampshire*,  is an arc shared by both polygons.
+### TopoJSON Vs GeoJSON
+TopoJSON has an `arcs` member which consists of the `coordinates` of the geometry types (except "Point" and "MultiPoint"). The value of the _"arcs"_ member is an array of arrays of positions. This is a primary advantage over GeoJSON objects where each individual geometries have their own separately defined coordinates.
+See [TopoJSON Format Specification](https://github.com/topojson/topojson-specification) to know more.
+
 
 ## Motivation
-Geometries in TopoJSON files are stitched together from shared line segments called arcs, rather than representing them discretely. Arcs are **point sequences**, whereas line strings and polygons are **arc sequences**. Each arc is defined only once, but it can be referenced multiple times by different shapes, ***reducing redundancy and reducing the size of the geospatial data file.*** Hence, the primary advantage of a topology is that it enhances shape simplicity by averting artifacts caused by independently simplifying shapes.
+Currently OCaml's [GeoJSON Library](https://github.com/geocaml/ocaml-geojson) supports various types of geometry objects as being laid down by the [IETF RFC 7946 - The GeoJSON Format Specification](https://www.rfc-editor.org/rfc/rfc7946.html). A similar sort of library is being implemented to  support *topojson specification*. 
 
+TopoJSON helps to reduce the size of the geospatial data file in a way by eradicating the redundancy and eliminating the duplicate topology that is being shared by one or more geometries. For example, a common boundary that is being shared between two states/ countries can be represented only once and can be referenced multiple times.
+To know more about [TopoJSON](https://github.com/topojson/topojson) and its related advantages.
 
 ## Current status
 ### Platform Support
@@ -29,7 +36,6 @@ Geometries in TopoJSON files are stitched together from shared line segments cal
 - Linux
 - Windows
 - MirageOS
-- Browsers
 
 ### Feature Status
 1. This library is capable of parsing a TopoJSON file as a whole.
@@ -41,54 +47,21 @@ Geometries in TopoJSON files are stitched together from shared line segments cal
 4. Other than the requisite fields to be supported by all the  *Geometry Objects* i.e., the ***type*** and the ***coordinates/ arcs*** fields, it also supports the following members:
   - Properties : A geometry object can also additionally have a member with the name “properties”. The value of the properties field is an object (any JSON object or a JSON null value).
 
-<!-- $MDX file=./src/topojson/topojson.ml,part=properties -->
-```ocaml
-    type properties = [ `None | `Null | `Obj of (string * json) list ]
-
-    let properties_or_null = function
-      | `None -> []
-      | `Null -> [ ("properties", J.null) ]
-      | `Obj v -> [ ("properties", J.obj v) ]
-```
-
-
 5. Additional members/ fields that are upholded by both the modules:
   - Bounding Box : To consist of information on the coordinate range for a  TopoJSON object may also have a member named “bbox”.
 
-<!-- $MDX file=./src/topojson/topojson.ml,part=bbox -->
-```ocaml
-  let bbox_to_json_or_empty bbox =
-    Option.(
-      if is_some bbox then [ ("bbox", J.array J.float (get bbox)) ] else [])
-```
-
-
-  - Foreign Members : Members or field that are no longer defined in the specification but are used in the TopoJSON document. Semantics do not apply to these *foreign members* nd their descendants, irrespective of their names and values.
-
-<!-- $MDX file=./src/topojson/topojson.ml,part=foreignMembers -->
-```ocaml
-    let keys_in_use =
-      [
-        "type";
-        "properties";
-        "coordinates";
-        "bbox";
-        "arcs";
-        "id";
-        "objects";
-        "geometries";
-      ]
-
-    let foreign_members_of_json json =
-      match J.to_obj json with
-      | Ok assoc ->
-          List.filter (fun (k, _v) -> not (List.mem k keys_in_use)) assoc
-      | Error _ -> []
-```
+  - Foreign Members : Members or field that are no longer defined in the specification but are used in the TopoJSON document. Semantics do not apply to these *foreign members* and their descendants, irrespective of their names and values.
 
 
 6. *Tranformation and Quantization* are yet to be implemented.
 
 ## Structure of the Code
-1. **src** : This directory consists of all the related implementations to parse TopoJSON objects including all the interfaces with types and signatures being required by the objects.
-2. **test** : Provides the test cases in the form of ```X.json``` file as well as modules to test them.
+1. **`src`** : This directory consists of all the related implementations to parse TopoJSON objects including all the interfaces with types and signatures being required by the objects.
+2. **`test`** : Provides the test cases in the form of ```X.json``` file as well as modules to test them.
+
+## Examples
+### Reading
+
+### Writing
+
+### Parsing
