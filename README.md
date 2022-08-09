@@ -24,17 +24,10 @@ See [TopoJSON Format Specification](https://github.com/topojson/topojson-specifi
 
 
 ## Motivation
-Currently OCaml's [GeoJSON Library](https://github.com/geocaml/ocaml-geojson) supports various types of geometry objects as being laid down by the [IETF RFC 7946 - The GeoJSON Format Specification](https://www.rfc-editor.org/rfc/rfc7946.html). A similar sort of library is being implemented to  support *topojson specification*. 
-
 TopoJSON helps to reduce the size of the geospatial data file in a way by eradicating the redundancy and eliminating the duplicate topology that is being shared by one or more geometries. For example, a common boundary that is being shared between two states/countries can be represented only once and can be referenced multiple times.
 To know more about [TopoJSON](https://github.com/topojson/topojson) and its related advantages.
 
 ## Current status
-### Platform Support
-- Unix and macos
-- Linux
-- Windows
-- MirageOS
 
 ### Feature Status
 1. This library is capable of parsing a TopoJSON file as a whole.
