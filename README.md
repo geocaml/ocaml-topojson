@@ -9,7 +9,6 @@ A collection of libraries for _parsing, constructing, and manipulating_ TopoJSON
   * [TopoJSON Vs GeoJSON](#topojson-vs-geojson)
 * [Motivation](#motivation)
 * [Current Status](#current-status)
-  * [Platform Support](#platform-support)
   * [Feature Status](#feature-status)
 * [Structure of the Code](#structure-of-the-code)
 * [Examples](#examples)
@@ -60,8 +59,9 @@ module Topojson = Topojson.Make (Ezjsonm_parser);;
 ```
 
 ### Reading
+#### Examples of error
 
-Example of error.
+1. Incorrect `Topology` type.
 
 ```ocaml
 # Topojson.of_json (`String "I should fail!");;
@@ -69,8 +69,12 @@ Example of error.
 Error (`Msg "Could not find Topology type")
 ```
 
+2. Missing fields 
+```ocaml
+# Topojson.of_json ( `O [ ("type", `String "Topology") ] );;     
+- : (Topojson.t, [ `Msg of string ]) result =
+Error (`Msg "No objects and/or arcs field in Topology object!")
+```
 
+#### Correctly parsed example
 
-### Writing
-
-### Parsing
