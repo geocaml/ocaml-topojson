@@ -78,3 +78,23 @@ Error (`Msg "No objects and/or arcs field in Topology object!")
 
 #### Correctly parsed example
 
+```ocaml
+# Topojson.of_json ( `O [ 
+  ("type", `String "Topology"); 
+  ("objects" , `O [  ("type" , `String "Polygon"); ("arcs", `A  [| [| 1 |] |])  ]); 
+  ("arcs", `A  
+  [|
+      [| [| 102.; 0. |]; [| 103.; 1. |]; [| 104.; 0. |]; [| 105.; 1. |] |];
+      [|
+        [| 100.; 0. |];
+        [| 101.; 0. |];
+        [| 101.; 1. |];
+        [| 100.; 1. |];
+        [| 100.; 0. |];
+      |];
+  |] )
+  ]);;    
+Line 3, characters 65-78:
+Error: This expression has type 'a array
+       but an expression was expected of type Topojson.json list
+```
