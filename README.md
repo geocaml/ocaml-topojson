@@ -59,42 +59,15 @@ module Topojson = Topojson.Make (Ezjsonm_parser);;
 ```
 
 ### Reading
-#### Examples of error
-
-1. Incorrect `Topology` type.
-
-```ocaml
-# Topojson.of_json (`String "I should fail!");;
-- : (Topojson.t, [ `Msg of string ]) result =
-Error (`Msg "Could not find Topology type")
-```
-
-2. Missing fields 
-```ocaml
-# Topojson.of_json ( `O [ ("type", `String "Topology") ] );;     
-- : (Topojson.t, [ `Msg of string ]) result =
-Error (`Msg "No objects and/or arcs field in Topology object!")
-```
-
-#### Correctly parsed example
+A small example how this library is efficient in reading a `json` file _(more particulary a `TopoJSON` file)_. This illustration depicts a *TopoJSON* `object` with type `"Topology"` which itself consists of a *Geomtery object* `"Polygon"`.
 
 ```ocaml
 # Topojson.of_json ( `O [ 
   ("type", `String "Topology"); 
-  ("objects" , `O [  ("type" , `String "Polygon"); ("arcs", `A  [| [| 1 |] |])  ]); 
-  ("arcs", `A  
-  [|
-      [| [| 102.; 0. |]; [| 103.; 1. |]; [| 104.; 0. |]; [| 105.; 1. |] |];
-      [|
-        [| 100.; 0. |];
-        [| 101.; 0. |];
-        [| 101.; 1. |];
-        [| 100.; 1. |];
-        [| 100.; 0. |];
-      |];
-  |] )
+  ("objects" , `O [  ("Instance" , `O [("type", `String "Polygon"); ("arcs", `A [ `A [`Float 0.]]) ]) ])  ; 
+  ("arcs", `A [ `A [ `A [`Float 100.;`Float 0.]; `A [`Float 101.; `Float 0.]; `A [`Float 101.; `Float 1.]; `A [`Float 100.; `Float 1.]; `A [`Float 100.; `Float 0.]]] );
   ]);;    
-Line 3, characters 65-78:
-Error: This expression has type 'a array
-       but an expression was expected of type Topojson.json list
+- : (Topojson.t, [ `Msg of string ]) result = Ok <abstr>
 ```
+
+
