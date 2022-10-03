@@ -1,7 +1,7 @@
-# ocaml-topojson --- OCaml library to work with TopoJSON Format Specification
+ocaml-topojson
+--------------
 
-
-A collection of libraries for _parsing, constructing, and manipulating_ TopoJSON objects.
+A collection of libraries in pure OCaml for _parsing, constructing, and manipulating_ TopoJSON objects.
 
 ## Contents
 
