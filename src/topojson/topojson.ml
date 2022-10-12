@@ -248,6 +248,7 @@ module Make (J : Intf.Json) = struct
       geometry : geometry;
       properties : properties;
       foreign_members : (string * json) list;
+      id : id;
     }
 
     let v ?(properties = `None) ?(foreign_members = []) geo =
