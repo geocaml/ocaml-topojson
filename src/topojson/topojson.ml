@@ -44,7 +44,7 @@ module Make (J : Intf.Json) = struct
           List.filter (fun (k, _v) -> not (List.mem k keys_in_use)) assoc
       | Error _ -> []
 
-    let parse_by_type json p_c typ =
+    let parse_with_coords json p_c typ =
       match (J.find json [ "type" ], J.find json [ "coordinates" ]) with
       | None, _ ->
           Error
@@ -59,7 +59,7 @@ module Make (J : Intf.Json) = struct
           | t when t = typ -> p_c coords
           | t -> Error (`Msg ("Expected type of `" ^ typ ^ "' but got " ^ t)))
 
-    let parse_by_arcs json p_a typ =
+    let parse_with_arcs json p_a typ =
       match (J.find json [ "type" ], J.find json [ "arcs" ]) with
       | None, _ ->
           Error
@@ -114,7 +114,7 @@ module Make (J : Intf.Json) = struct
       let position = Fun.id
       let v position = position
       let parse_coords coords = J.to_array (decode_or_err J.to_float) coords
-      let base_of_json json = parse_by_type json parse_coords typ
+      let base_of_json json = parse_with_coords json parse_coords typ
 
       let to_json ?bbox ?(properties = `None) ?(foreign_members = []) position =
         J.obj
@@ -137,7 +137,7 @@ module Make (J : Intf.Json) = struct
         try J.to_array (decode_or_err Point.parse_coords) coords
         with Failure m -> Error (`Msg m)
 
-      let base_of_json json = parse_by_type json parse_coords typ
+      let base_of_json json = parse_with_coords json parse_coords typ
 
       let to_json ?bbox ?(properties = `None) ?(foreign_members = []) positions
           =
@@ -157,7 +157,7 @@ module Make (J : Intf.Json) = struct
       let typ = "LineString"
       let v arc = arc
       let parse_arcs arcs = J.to_array (decode_or_err J.to_int) arcs
-      let base_of_json json = parse_by_arcs json parse_arcs typ
+      let base_of_json json = parse_with_arcs json parse_arcs typ
 
       let to_json ?bbox ?(properties = `None) ?(foreign_members = []) arc =
         J.obj
@@ -177,7 +177,7 @@ module Make (J : Intf.Json) = struct
         try J.to_array (decode_or_err LineString.parse_arcs) arcs
         with Failure m -> Error (`Msg m)
 
-      let base_of_json json = parse_by_arcs json parse_arcs typ
+      let base_of_json json = parse_with_arcs json parse_arcs typ
 
       let to_json ?bbox ?(properties = `None) ?(foreign_members = []) arcs =
         J.obj
@@ -201,7 +201,7 @@ module Make (J : Intf.Json) = struct
           J.to_array (decode_or_err (J.to_array (decode_or_err J.to_int))) arcs
         with Failure m -> Error (`Msg m)
 
-      let base_of_json json = parse_by_arcs json parse_arcs typ
+      let base_of_json json = parse_with_arcs json parse_arcs typ
 
       let to_json ?bbox ?(properties = `None) ?(foreign_members = []) arcs =
         J.obj
@@ -222,7 +222,7 @@ module Make (J : Intf.Json) = struct
         try J.to_array (decode_or_err Polygon.parse_arcs) arcs
         with Failure m -> Error (`Msg m)
 
-      let base_of_json json = parse_by_arcs json parse_arcs typ
+      let base_of_json json = parse_with_arcs json parse_arcs typ
 
       let to_json ?bbox ?(properties = `None) ?(foreign_members = []) arcs =
         J.obj
