@@ -171,6 +171,10 @@ module type Geometry = sig
   (** The properties associated with a Geometry object can be left out
       ([`None]), could be specifically a null value ([`Null]) or an object. *)
 
+  and id = [ `None | `Null | `Obj of (string * json) list ]
+  (** The id associated with a Geometry object can be left out ([`None]), could
+      be specifically a null value ([`Null]) or an object. *)
+
   and t
 
   val properties : t -> properties
@@ -185,11 +189,14 @@ module type Geometry = sig
   (** [foreign_members t] will extract the name-value pairs from an object that
       are not a part of the TopoJSON specification. *)
 
-  val id : t -> json option
+  val id : t -> id
+  (** [id t] returns the id associated with a given object. If there aren't any
+      this returns [`None]. The empty list is the empty object [{}]. *)
 
   val v :
     ?properties:properties ->
     ?foreign_members:(string * json) list ->
+    ?id:id ->
     geometry ->
     t
 
