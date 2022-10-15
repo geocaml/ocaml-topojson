@@ -185,11 +185,17 @@ module type Geometry = sig
   (** [foreign_members t] will extract the name-value pairs from an object that
       are not a part of the TopoJSON specification. *)
 
+  val id : t -> json option
+  (** [id t] returns the id associated with a given object. If there aren't any
+      this returns [None]s. *)
+
   val v :
+    ?id:json ->
     ?properties:properties ->
     ?foreign_members:(string * json) list ->
     geometry ->
     t
+
   (** Creates a new Geometry object. *)
 
   include Json_conv with type t := t and type json := json
