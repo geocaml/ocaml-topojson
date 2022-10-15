@@ -187,9 +187,10 @@ module type Geometry = sig
 
   val id : t -> json option
   (** [id t] returns the id associated with a given object. If there aren't any
-      this returns [`None]. The empty list is the empty object [{}]. *)
+      this returns [None]s. *)
 
   val v :
+    ?id:json ->
     ?properties:properties ->
     ?foreign_members:(string * json) list ->
     geometry ->
