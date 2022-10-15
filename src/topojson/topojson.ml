@@ -26,8 +26,6 @@ module Make (J : Intf.Json) = struct
       | `Null -> [ ("properties", J.null) ]
       | `Obj v -> [ ("properties", J.obj v) ]
 
-    type id = [ `None | `Null | `Obj of (string * json) list ]
-
     let keys_in_use =
       [
         "type";
@@ -250,11 +248,11 @@ module Make (J : Intf.Json) = struct
       geometry : geometry;
       properties : properties;
       foreign_members : (string * json) list;
-      id : id;
+      id : json option;
     }
 
-    let v ?(properties = `None) ?(foreign_members = []) ?(id = `None) geo =
-      { geometry = geo; properties; foreign_members; id }
+    let v ?(properties = `None) ?(foreign_members = []) geo =
+      { geometry = geo; properties; foreign_members; id = None }
 
     let geometry t = t.geometry
     let properties t = t.properties
@@ -266,10 +264,7 @@ module Make (J : Intf.Json) = struct
       | Some j -> if J.is_null j then `Null else `Obj (decode_or_err J.to_obj j)
       | None -> `None
 
-    let id_of_json json =
-      match J.find json [ "id" ] with
-      | Some j -> if J.is_null j then `Null else `Obj (decode_or_err J.to_obj j)
-      | None -> `None
+    let id_of_json json = J.find json [ "id" ]
 
     let rec base_of_json json =
       let fm = foreign_members_of_json json in
