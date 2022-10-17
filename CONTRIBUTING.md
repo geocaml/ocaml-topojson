@@ -2,29 +2,32 @@
 
 ## OCaml and opam
 
-After following [these instructions for setting up OCaml with opam](https://v3.ocaml.org/docs/up-and-running) you should be in a position to start building this
-repository. Refer to the following section for cloning the repository using git.
+After following [these instructions for setting up OCaml with opam](https://v3.ocaml.org/docs/up-and-running) you should be in a position to start building this repository. Refer to the following section for cloning the repository using git.
 
-Once you have that set up to install the dependencies you can run 
+Once you have done the set up, next install the dependencies. 
+
+To install the dependencies, you run: 
 
 ```
 opam install . --deps-only --with-test
 ```
 
-This will install the main dependencies along with any we will need for running the tests. The build the project after opam has finished installing everything run:
+This will install the main dependencies along with any other, which will be needed for running the tests. 
+
+To build the project, once opam has finished installing everything, run:
 
 ```
 dune build
 ```
 
-And to run the tests (which are in the `test` directory) run:
+Also,to run the tests (which are in the `test` directory) run:
 
 ```
 dune runtest
 ```
 
 
-After making changes to the code please also run the formatter to maintain a common style across the codebase. You can achieve this by running the following command:
+After making changes to the code, please also run the formatter to maintain a common style across the codebase. You can achieve this by running the following command:
 
 ```
 dune build @fmt --auto
@@ -51,10 +54,10 @@ Feel free to use any approach while creating a pull request. Here are a few sugg
 - If you are not sure whether your changes will be accepted or want to discuss the method before delving into it, please create an issue and ask it.
 - Clone the repo locally (or continue editing directly in github if the change is small). Checkout
   out the branch that you created.
-- Create a draft pull request with a small initial commit. Here's how you can [create a draft pull request.](https://github.blog/2019-02-14-introducing-draft-pull-requests/)
-- Continue developing, feel free to ask questions in the PR, if you run into obstacles or uncertainty as you make changes
-- Review your implementation according to the checks noted in the PR template
-- Once you feel your branch is ready, change the PR status to "ready to review"
-- Consult the tasks noted in the PR template
-- When merging, consider cleaning up the commit body
+- Create a draft pull request with a small initial commit. Here's how you can [create a draft pull request.](https://github.blog/2019-02-14-introducing-draft-pull-requests/).
+- Continue developing, feel free to ask questions in the PR, if you run into obstacles or uncertainty as you make changes.
+- Review your implementation according to the checks noted in the PR template.
+- Once you feel your branch is ready, change the PR status to "ready to review".
+- Consult the tasks noted in the PR template.
+- When merging, consider cleaning up the commit body.
 - Close any issues that were addressed by this PR.
