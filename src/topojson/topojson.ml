@@ -49,20 +49,11 @@ module Make (J : Intf.Json) = struct
         "geometries";
       ]
 
-    let foreign_members_of_json json =
+    let foreign_members_of_json json keys_in_use =
       match J.to_obj json with
       | Ok assoc ->
           List.filter (fun (k, _v) -> not (List.mem k keys_in_use)) assoc
       | Error _ -> []
-
-    let foreign_members_of_json_for_point json =
-      match J.to_obj json with
-      | Ok assoc ->
-          List.filter
-            (fun (k, _v) -> not (List.mem k keys_in_use_for_point))
-            assoc
-      | Error _ -> []
-
     let parse_with_coords json p_c typ =
       match (J.find json [ "type" ], J.find json [ "coordinates" ]) with
       | None, _ ->
@@ -294,25 +285,19 @@ module Make (J : Intf.Json) = struct
           match J.to_string typ with
           | Ok "Point" ->
               Result.map (fun g ->
-                  let point_foreign_members =
-                    foreign_members_of_json_for_point json
-                  in
                   {
                     geometry = Point g;
                     properties;
-                    foreign_members = point_foreign_members;
+                    foreign_members = fm keys_in_use_for_point;
                     id;
                   })
               @@ Point.base_of_json json
           | Ok "MultiPoint" ->
               Result.map (fun g ->
-                  let point_foreign_members =
-                    foreign_members_of_json_for_point json
-                  in
                   {
                     geometry = MultiPoint g;
                     properties;
-                    foreign_members = point_foreign_members;
+                    foreign_members = fm keys_in_use_for_point;
                     id;
                   })
               @@ MultiPoint.base_of_json json
@@ -321,7 +306,7 @@ module Make (J : Intf.Json) = struct
                   {
                     geometry = LineString g;
                     properties;
-                    foreign_members = fm;
+                    foreign_members = fm keys_in_use;
                     id;
                   })
               @@ LineString.base_of_json json
@@ -330,20 +315,20 @@ module Make (J : Intf.Json) = struct
                   {
                     geometry = MultiLineString g;
                     properties;
-                    foreign_members = fm;
+                    foreign_members = fm keys_in_use;
                     id;
                   })
               @@ MultiLineString.base_of_json json
           | Ok "Polygon" ->
               Result.map (fun g ->
-                  { geometry = Polygon g; properties; foreign_members = fm; id })
+                  { geometry = Polygon g; properties; foreign_members = fm keys_in_use; id })
               @@ Polygon.base_of_json json
           | Ok "MultiPolygon" ->
               Result.map (fun g ->
                   {
                     geometry = MultiPolygon g;
                     properties;
-                    foreign_members = fm;
+                    foreign_members = fm keys_in_use;
                     id;
                   })
               @@ MultiPolygon.base_of_json json
@@ -356,7 +341,7 @@ module Make (J : Intf.Json) = struct
                       {
                         geometry = Collection g;
                         properties;
-                        foreign_members = fm;
+                        foreign_members = fm keys_in_use;
                         id;
                       })
                     geo
