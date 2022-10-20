@@ -124,6 +124,7 @@ module Make (J : Intf.Json) = struct
       let position = Fun.id
       let v position = position
       let parse_coords coords = J.to_array (decode_or_err J.to_float) coords
+
       let base_of_json json = parse_with_coords json parse_coords typ
 
       let to_json ?bbox ?(properties = `None) ?(foreign_members = []) position =
