@@ -38,10 +38,29 @@ module Make (J : Intf.Json) = struct
         "geometries";
       ]
 
+    let keys_in_use_for_point =
+      [
+        "type";
+        "properties";
+        "coordinates";
+        "bbox";
+        "id";
+        "objects";
+        "geometries";
+      ]
+
     let foreign_members_of_json json =
       match J.to_obj json with
       | Ok assoc ->
           List.filter (fun (k, _v) -> not (List.mem k keys_in_use)) assoc
+      | Error _ -> []
+
+    let foreign_members_of_json_for_point json =
+      match J.to_obj json with
+      | Ok assoc ->
+          List.filter
+            (fun (k, _v) -> not (List.mem k keys_in_use_for_point))
+            assoc
       | Error _ -> []
 
     let parse_with_coords json p_c typ =
@@ -275,14 +294,25 @@ module Make (J : Intf.Json) = struct
           match J.to_string typ with
           | Ok "Point" ->
               Result.map (fun g ->
-                  { geometry = Point g; properties; foreign_members = fm; id })
+                  let point_foreign_members =
+                    foreign_members_of_json_for_point json
+                  in
+                  {
+                    geometry = Point g;
+                    properties;
+                    foreign_members = point_foreign_members;
+                    id;
+                  })
               @@ Point.base_of_json json
           | Ok "MultiPoint" ->
               Result.map (fun g ->
+                  let point_foreign_members =
+                    foreign_members_of_json_for_point json
+                  in
                   {
                     geometry = MultiPoint g;
                     properties;
-                    foreign_members = fm;
+                    foreign_members = point_foreign_members;
                     id;
                   })
               @@ MultiPoint.base_of_json json
