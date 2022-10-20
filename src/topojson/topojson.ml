@@ -321,7 +321,12 @@ module Make (J : Intf.Json) = struct
               @@ MultiLineString.base_of_json json
           | Ok "Polygon" ->
               Result.map (fun g ->
-                  { geometry = Polygon g; properties; foreign_members = fm keys_in_use; id })
+                  {
+                    geometry = Polygon g;
+                    properties;
+                    foreign_members = fm keys_in_use;
+                    id
+                   })
               @@ Polygon.base_of_json json
           | Ok "MultiPolygon" ->
               Result.map (fun g ->
