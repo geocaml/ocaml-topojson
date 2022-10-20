@@ -70,4 +70,23 @@ A small example how this library is efficient in reading a `json` file _(more pa
 - : (Topojson.t, [ `Msg of string ]) result = Ok <abstr>
 ```
 
+### Example of building a TopoJSON object and writing it to a string
+
+```ocaml
+
+let topojs = {
+    type = "Topology";
+    objects = { example = {
+        type = "GeometryCollection"; geometries = [{
+                type = "Point";properties = {prop0 = "value0"};coordinates = [102; 0.5]}; {type = "LineString";properties = { prop0 = "value0";prop1 = 0}; arcs = [0]
+             } ; {
+                type = "Polygon"; properties = { prop0 = "value0";  prop1 = { this = "that" }}; 
+                arcs = [[-2]] } ]}}; arcs = [[[102; 0];[103; 1];[104; 0];[105; 1]];
+            ]}     
+let bbox = [| 1.2; 2.1; 3.1; |] 
+let type_t =  constr topojs bbox   // calling the contructor 
+let tponJson_object = topojson type_t // converting type_t to tponJson_object
+let str = to_json tponJson_object   //  converting tponJson_object to string
+```
+
 

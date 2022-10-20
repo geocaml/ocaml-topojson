@@ -220,6 +220,10 @@ module type S = sig
   type topojson = Topology of Topology.t | Geometry of Geometry.t
   type t
 
+  let constr (topojson : topojson) (bbox : float array option) : t = { topojson; bbox }
+
+
+
   val topojson : t -> topojson
   val bbox : t -> float array option
 
