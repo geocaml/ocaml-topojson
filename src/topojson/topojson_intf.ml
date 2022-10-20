@@ -220,8 +220,6 @@ module type S = sig
   type topojson = Topology of Topology.t | Geometry of Geometry.t
   type t
 
-
-
   val topojson : t -> topojson
   val bbox : t -> float array option
 
