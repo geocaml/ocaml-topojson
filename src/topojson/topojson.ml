@@ -54,6 +54,7 @@ module Make (J : Intf.Json) = struct
       | Ok assoc ->
           List.filter (fun (k, _v) -> not (List.mem k keys_in_use)) assoc
       | Error _ -> []
+
     let parse_with_coords json p_c typ =
       match (J.find json [ "type" ], J.find json [ "coordinates" ]) with
       | None, _ ->
@@ -124,7 +125,6 @@ module Make (J : Intf.Json) = struct
       let position = Fun.id
       let v position = position
       let parse_coords coords = J.to_array (decode_or_err J.to_float) coords
-
       let base_of_json json = parse_with_coords json parse_coords typ
 
       let to_json ?bbox ?(properties = `None) ?(foreign_members = []) position =
@@ -326,8 +326,8 @@ module Make (J : Intf.Json) = struct
                     geometry = Polygon g;
                     properties;
                     foreign_members = fm keys_in_use;
-                    id
-                   })
+                    id;
+                  })
               @@ Polygon.base_of_json json
           | Ok "MultiPolygon" ->
               Result.map (fun g ->
