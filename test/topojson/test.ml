@@ -61,8 +61,8 @@ let pp_position ppf t =
   let lng = Position.lng t in
   Fmt.pf ppf "[%f, %f]" lat lng
 
-  let pp_foreign_member ppf (v : (string * Ezjsonm.value) list) =
-    Fmt.pf ppf "%a" Fmt.(list (pair string pp_ezjsonm)) v
+let pp_foreign_member ppf (v : (string * Ezjsonm.value) list) =
+  Fmt.pf ppf "%a" Fmt.(list (pair string pp_ezjsonm)) v
 
 let foreign_members = Alcotest.testable pp_foreign_member Stdlib.( = )
 let position = Alcotest.testable pp_position Stdlib.( = )
@@ -96,7 +96,6 @@ and remove acc k = function
   | (k', _) :: rest when k = k' -> List.rev acc @ rest
   | x :: rest -> remove (x :: acc) k rest
 
-
 let ezjsonm =
   Alcotest.testable
     (fun ppf t -> Fmt.pf ppf "%s" (Ezjsonm.value_to_string t))
@@ -105,14 +104,14 @@ let ezjsonm =
 let main () =
   let s = read_file "./test_cases/files/exemplar.json" in
   let json = Ezjsonm.value_from_string s in
-  let expected_foreign_members = [("arcs", json)] in
+  let expected_foreign_members = [ ("arcs", json) ] in
   let topojson_obj = Topojson.of_json json in
   match (topojson_obj, Result.map Topojson.topojson topojson_obj) with
   | Ok t, Ok (Topojson.Topology f) ->
       (* Here we check that the arcs defined in the file are the same as the ones
          we hardcoded above *)
       Alcotest.(check (array (array position))) "same arcs" f.arcs expected_arcs;
-      Alcotest.(check  ( foreign_members))
+      Alcotest.(check foreign_members)
         "same foreign_member" expected_foreign_members f.foreign_members;
       (* Then we check that converting the Topojson OCaml value to JSON and then back
          again produces the same Topojson OCaml value. *)
@@ -128,5 +127,5 @@ let main () =
 (* let point = Topojson.Geometry.Point.position *)
 let () = Alcotest.run "topojson" [ ("parsing", [ ("simple", `Quick, main) ]) ]
 (* let keys_in_use_for_point = [ "id" ]
-let checking_for_arcs = List.mem "arcs" keys_in_use_for_point
-let a = match checking_for_arcs with true -> "" | false -> "" *)
+   let checking_for_arcs = List.mem "arcs" keys_in_use_for_point
+   let a = match checking_for_arcs with true -> "" | false -> "" *)
