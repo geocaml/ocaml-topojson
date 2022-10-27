@@ -61,10 +61,7 @@ let pp_position ppf t =
   let lng = Position.lng t in
   Fmt.pf ppf "[%f, %f]" lat lng
 
-let pp_foreign_member ppf (v : (string * Ezjsonm.value) list) =
-  Fmt.pf ppf "%a" Fmt.(list (pair string pp_ezjsonm)) v
-
-let foreign_members = Alcotest.testable pp_foreign_member Stdlib.( = )
+let s = read_file "./test_cases/files/exemplar.json"
 let position = Alcotest.testable pp_position Stdlib.( = )
 let msg = Alcotest.testable (fun ppf (`Msg m) -> Fmt.pf ppf "%s" m) Stdlib.( = )
 
@@ -104,6 +101,12 @@ let ezjsonm =
 let main () =
   let s = read_file "./test_cases/files/exemplar.json" in
   let json = Ezjsonm.value_from_string s in
+  let pp_ezjsonm ppf json = Fmt.pf ppf "%s" json in
+  let pp_foreign_member ppf (v : (string * Ezjsonm.value) list) =
+    Fmt.pf ppf "%a" Fmt.(list (pair string pp_ezjsonm)) v
+  in
+
+  let foreign_members = Alcotest.testable pp_foreign_member Stdlib.( = ) in
   let expected_foreign_members = [ ("arcs", json) ] in
   let topojson_obj = Topojson.of_json json in
   match (topojson_obj, Result.map Topojson.topojson topojson_obj) with
@@ -124,8 +127,4 @@ let main () =
   | Error (`Msg m), _ -> failwith m
   | _, Error (`Msg m) -> failwith m
 
-(* let point = Topojson.Geometry.Point.position *)
 let () = Alcotest.run "topojson" [ ("parsing", [ ("simple", `Quick, main) ]) ]
-(* let keys_in_use_for_point = [ "id" ]
-   let checking_for_arcs = List.mem "arcs" keys_in_use_for_point
-   let a = match checking_for_arcs with true -> "" | false -> "" *)
