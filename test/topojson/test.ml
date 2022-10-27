@@ -101,7 +101,7 @@ let ezjsonm =
 let main () =
   let s = read_file "./test_cases/files/exemplar.json" in
   let json = Ezjsonm.value_from_string s in
-  let pp_ezjsonm ppf json = Fmt.pf ppf "%s" json in
+  let pp_ezjsonm ppf json = Fmt.pf ppf "%s"(Ezjsonm.value_to_string json) in
   let pp_foreign_member ppf (v : (string * Ezjsonm.value) list) =
     Fmt.pf ppf "%a" Fmt.(list (pair string pp_ezjsonm)) v
   in
