@@ -69,5 +69,33 @@ A small example how this library is efficient in reading a `json` file _(more pa
   ]);;    
 - : (Topojson.t, [ `Msg of string ]) result = Ok <abstr>
 ```
+## An example of reading a raw JSON string
 
+```ocaml
+# #require "topojson";;
+# #require "ezjsonm";;
+# module Topojson = Topojson.Make (Ezjsonm_parser);;
+Line 1, characters 19-32:
+Error: Unbound module Topojson.Make
+# let topojson_string = {|{
+    "arcs": [[[0.0, 0.0], [0.0, 9999.0], [2000.0, 0.0], [0.0, -9999.0], [-2000.0, 0.0]]],
+    "objects": {"example ": {
+            "type": "GeometryCollection",
+            "geometries": [
+                {"coordinates": [4000.0, 5000.0],
+                 "properties": {"prop0": "value0"},
+                 "type": "Point"},
+                {"arcs": [[0]],
+                 "properties": {"prop0": "value0", "prop1": {"this": "that"}},
+                 "type": "Polygon"}
+            ]
+     }},
+    "transform": {"scale": [0.0005, 0.0001], "translate": [100.0, 0.0]},
+    ;;
+Line 1, characters 23-25:
+Error: String literal not terminated
+# Topojson.of_json topojson_string;;
+Line 1, characters 18-33:
+Error: Unbound value topojson_string
+```
 
