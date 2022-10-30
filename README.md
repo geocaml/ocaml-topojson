@@ -69,5 +69,28 @@ A small example how this library is efficient in reading a `json` file _(more pa
   ]);;    
 - : (Topojson.t, [ `Msg of string ]) result = Ok <abstr>
 ```
+### Reading a raw JSON string
 
+```ocaml
+# let topojson_string =  {|{
+    "arcs": [[[0.0, 0.0], [0.0, 9999.0], [2000.0, 0.0], [0.0, -9999.0], [-2000.0, 0.0]]],
+    "objects": {"example ": {
+            "type": "GeometryCollection",
+            "geometries": [
+                {"coordinates": [4000.0, 5000.0],
+                 "properties": {"prop0": "value0"},
+                 "type": "Point"},
+                {"arcs": [[0]],
+                 "properties": {"prop0": "value0", "prop1": {"this": "that"}},
+                 "type": "Polygon"}
+            ]
+     }},
+    "transform": {"scale": [0.0005, 0.0001], "translate": [100.0, 0.0]},
+    "type": "Topology"}|};;
+val topojson_string : string =
+  "{\n    \"arcs\": [[[0.0, 0.0], [0.0, 9999.0], [2000.0, 0.0], [0.0, -9999.0], [-2000.0, 0.0]]],\n    \"objects\": {\"example \": {\n            \"type\": \"GeometryCollection\",\n            \"geometries\": [\n                {\"coordinates\": [4000.0, 5000.0],\n                 \"properties\": {\"prop0\": \"value0\"},\n     "... (* string length 595; truncated *)
+
+# Topojson.of_json ( Ezjsonm.value_from_string topojson_string);; 
+- : (Topojson.t, [ `Msg of string ]) result = Ok <abstr>
+```
 
