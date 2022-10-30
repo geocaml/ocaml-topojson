@@ -72,12 +72,7 @@ A small example how this library is efficient in reading a `json` file _(more pa
 ## An example of reading a raw JSON string
 
 ```ocaml
-# #require "topojson";;
-# #require "ezjsonm";;
-# module Topojson = Topojson.Make (Ezjsonm_parser);;
-Line 1, characters 19-32:
-Error: Unbound module Topojson.Make
-# let topojson_string = {|{
+# let topojson_string =  {|{
     "arcs": [[[0.0, 0.0], [0.0, 9999.0], [2000.0, 0.0], [0.0, -9999.0], [-2000.0, 0.0]]],
     "objects": {"example ": {
             "type": "GeometryCollection",
@@ -91,11 +86,11 @@ Error: Unbound module Topojson.Make
             ]
      }},
     "transform": {"scale": [0.0005, 0.0001], "translate": [100.0, 0.0]},
-    ;;
-Line 1, characters 23-25:
-Error: String literal not terminated
-# Topojson.of_json topojson_string;;
-Line 1, characters 18-33:
-Error: Unbound value topojson_string
+    "type": "Topology"}|};;
+val topojson_string : string =
+  "{\n    \"arcs\": [[[0.0, 0.0], [0.0, 9999.0], [2000.0, 0.0], [0.0, -9999.0], [-2000.0, 0.0]]],\n    \"objects\": {\"example \": {\n            \"type\": \"GeometryCollection\",\n            \"geometries\": [\n                {\"coordinates\": [4000.0, 5000.0],\n                 \"properties\": {\"prop0\": \"value0\"},\n     "... (* string length 595; truncated *)
+
+# Topojson.of_json ( Ezjsonm.value_from_string topojson_string);; 
+- : (Topojson.t, [ `Msg of string ]) result = Ok <abstr>
 ```
 
