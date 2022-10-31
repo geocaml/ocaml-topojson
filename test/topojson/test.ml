@@ -55,11 +55,22 @@ let expected_arcs =
       |];
     |]
 
+let expected_foreign_members =
+  let open Topojson in
+  Geometry.foreign_members
+
 let pp_position ppf t =
   let open Topojson.Geometry in
   let lat = Position.lat t in
   let lng = Position.lng t in
   Fmt.pf ppf "[%f, %f]" lat lng
+
+let get_foreign_members_in_point (f : Topojson.Topology.t) =
+  let open Topojson in
+  let objs = List.hd f.objects |> snd in
+  match Geometry.geometry objs with
+  | Geometry.Collection (point :: _) -> Geometry.foreign_members point
+  | _ -> assert false
 
 let s = read_file "./test_cases/files/exemplar.json"
 let position = Alcotest.testable pp_position Stdlib.( = )
@@ -98,16 +109,20 @@ let ezjsonm =
     (fun ppf t -> Fmt.pf ppf "%s" (Ezjsonm.value_to_string t))
     ezjsonm_equal
 
+(* type pp_set_formatter_out_functions = {
+     foreign_member : Topojson.Geometry.foreign_members -> unit;
+
+   } *)
 let main () =
   let s = read_file "./test_cases/files/exemplar.json" in
   let json = Ezjsonm.value_from_string s in
+
   let pp_ezjsonm ppf json = Fmt.pf ppf "%s" (Ezjsonm.value_to_string json) in
-  let pp_foreign_member ppf (v : (string * Ezjsonm.value) list) =
+  let pp_foreign_member ppf (v : (string * get_foreign_members_in_point) list) =
     Fmt.pf ppf "%a" Fmt.(list (pair string pp_ezjsonm)) v
   in
-
   let foreign_members = Alcotest.testable pp_foreign_member Stdlib.( = ) in
-  let expected_foreign_members = [ ("arcs", json) ] in
+
   let topojson_obj = Topojson.of_json json in
   match (topojson_obj, Result.map Topojson.topojson topojson_obj) with
   | Ok t, Ok (Topojson.Topology f) ->
@@ -115,7 +130,7 @@ let main () =
          we hardcoded above *)
       Alcotest.(check (array (array position))) "same arcs" f.arcs expected_arcs;
       Alcotest.(check foreign_members)
-        "same foreign_member" expected_foreign_members f.foreign_members;
+        d "same foreign_member" expected_foreign_members f.foreign_members;
       (* Then we check that converting the Topojson OCaml value to JSON and then back
          again produces the same Topojson OCaml value. *)
       let output_json = Topojson.to_json t in
