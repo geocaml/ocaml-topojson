@@ -380,9 +380,10 @@ module Make (J : Intf.Json) = struct
       objects : (string * Geometry.t) list;
       arcs : Geometry.Position.t array array;
       foreign_members : (string * json) list;
-      transform:  (string* Geometry.Position.t array )list;
-       
+      transform : string * Geometry.Position.t array;
     }
+
+    type transform = { scale : float * float; translate : float * float }
 
     let keys_in_use =
       [
@@ -398,13 +399,17 @@ module Make (J : Intf.Json) = struct
 
     let foreign_members_of_json json =
       match J.to_obj json with
-       | Ok assoc ->
+      | Ok assoc ->
           List.filter (fun (k, _v) -> not (List.mem k keys_in_use)) assoc
       | Error _ -> []
 
     let base_of_json json =
-      match (J.find json [ "objects" ], J.find json [ "arcs" ], J.find json [ "transform" ]) with
-      | Some objects, Some arcs, Some transform->
+      match
+        ( J.find json [ "objects" ],
+          J.find json [ "arcs" ],
+          J.find json [ "transform" ] )
+      with
+      | Some objects, Some arcs, Some transform ->
           let* objects = J.to_obj objects in
           let geometries =
             List.map
@@ -417,35 +422,40 @@ module Make (J : Intf.Json) = struct
                  (J.to_array
                     (decode_or_err (J.to_array (decode_or_err J.to_float)))))
               arcs
-
           in
 
-          let* transform =
-           (* J.to_list( ("scale", "translate")J.to_array(decode_or_err J.to_float))
+          (*let* transform =
+            (*J.to_string transform in
+            let float=
+               (J.to_list(J.to_array(decode_or_err J.to_float)))
               transform*)
-            (*J.to_list((scale J.to_array(decode_or_err J.to_float)),
-              (translate J.to_array(decode_or_err J.to_float)) )*)
-            
-            J.to_string transform in 
-            let (Geometry.Position.t )= 
-               (J.to_list(J.to_array(decode_or_err J.to_float)))   
-              transform
+            J.to_obj in let float= (J.to_list(J.to_array(decode_or_err (J.to_float J.to_float))))
+              transform*)
+          let* transform = J.to_obj transform in
 
+          let float = (J.to_array (decode_or_err J.to_float)) transform in
 
-          in
           let fm = foreign_members_of_json json in
-          Ok { objects = geometries; arcs; transform = Geometry.Position.t; foreign_members = fm}
-      | _, _, _ -> Error (`Msg "No objects, arcs and/or transform field in Topology object!")
+          Ok
+            {
+              objects = geometries;
+              arcs;
+              transform = float;
+              foreign_members = fm;
+            }
+      | _, _, _ ->
+          Error
+            (`Msg "No objects, arcs and/or transform field in Topology object!")
 
-    let to_json ?bbox { objects; arcs; foreign_members; transform } =
+    let to_json ?bbox { objects; arcs; transform; foreign_members } =
       J.obj
         ([
            ("type", J.string "Topology");
            ( "objects",
              J.obj (List.map (fun (k, v) -> (k, Geometry.to_json v)) objects) );
            ("arcs", J.array (J.array (J.array J.float)) arcs);
-           ("transform", J.string ("scale", "translate") (J.list(J.array J.float) transform));
-
+           (*("transform", ( (J.list(J.array J.float)) transform));*)
+           ("transform", J.obj (J.array J.float) transform);
          ]
         @ bbox_to_json_or_empty bbox
         @ foreign_members)
