@@ -109,7 +109,7 @@ let pp_ezjsonm ppf json = Fmt.pf ppf "%s" (Ezjsonm.value_to_string json)
 let pp_foreign_member ppf (v : (string * Ezjsonm.value) list) =
   Fmt.pf ppf "%a" Fmt.(list (pair string pp_ezjsonm)) v
 
-let expected_foreign_members = [ ("arcs", `A [ `Float 0. ]) ]
+let expected_foreign_members = [ ("arcs", `A [ `Float 0.1 ]) ]
 let foreign_members = Alcotest.testable pp_foreign_member Stdlib.( = )
 
 let main () =
@@ -120,11 +120,13 @@ let main () =
   | Ok t, Ok (Topojson.Topology f) ->
       (* Here we check that the arcs defined in the file are the same as the ones
          we hardcoded above *)
-      Alcotest.(check foreign_members)
-        "same foreign_members" expected_foreign_members f.foreign_members;
       Alcotest.(check (array (array position))) "same arcs" f.arcs expected_arcs;
       (* Then we check that converting the Topojson OCaml value to JSON and then back
          again produces the same Topojson OCaml value. *)
+      Alcotest.(check foreign_members)
+        "same foreign_members" expected_foreign_members
+        (get_foreign_members_in_point f);
+
       let output_json = Topojson.to_json t in
       Alcotest.(check ezjsonm) "same ezjsonm" json output_json;
       Alcotest.(check (result topojson msg))
