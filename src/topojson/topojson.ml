@@ -38,7 +38,18 @@ module Make (J : Intf.Json) = struct
         "geometries";
       ]
 
-    let foreign_members_of_json json =
+    let keys_in_use_for_point =
+      [
+        "type";
+        "properties";
+        "coordinates";
+        "bbox";
+        "id";
+        "objects";
+        "geometries";
+      ]
+
+    let foreign_members_of_json json keys_in_use =
       match J.to_obj json with
       | Ok assoc ->
           List.filter (fun (k, _v) -> not (List.mem k keys_in_use)) assoc
@@ -275,14 +286,19 @@ module Make (J : Intf.Json) = struct
           match J.to_string typ with
           | Ok "Point" ->
               Result.map (fun g ->
-                  { geometry = Point g; properties; foreign_members = fm; id })
+                  {
+                    geometry = Point g;
+                    properties;
+                    foreign_members = fm keys_in_use_for_point;
+                    id;
+                  })
               @@ Point.base_of_json json
           | Ok "MultiPoint" ->
               Result.map (fun g ->
                   {
                     geometry = MultiPoint g;
                     properties;
-                    foreign_members = fm;
+                    foreign_members = fm keys_in_use_for_point;
                     id;
                   })
               @@ MultiPoint.base_of_json json
@@ -291,7 +307,7 @@ module Make (J : Intf.Json) = struct
                   {
                     geometry = LineString g;
                     properties;
-                    foreign_members = fm;
+                    foreign_members = fm keys_in_use;
                     id;
                   })
               @@ LineString.base_of_json json
@@ -300,20 +316,25 @@ module Make (J : Intf.Json) = struct
                   {
                     geometry = MultiLineString g;
                     properties;
-                    foreign_members = fm;
+                    foreign_members = fm keys_in_use;
                     id;
                   })
               @@ MultiLineString.base_of_json json
           | Ok "Polygon" ->
               Result.map (fun g ->
-                  { geometry = Polygon g; properties; foreign_members = fm; id })
+                  {
+                    geometry = Polygon g;
+                    properties;
+                    foreign_members = fm keys_in_use;
+                    id;
+                  })
               @@ Polygon.base_of_json json
           | Ok "MultiPolygon" ->
               Result.map (fun g ->
                   {
                     geometry = MultiPolygon g;
                     properties;
-                    foreign_members = fm;
+                    foreign_members = fm keys_in_use;
                     id;
                   })
               @@ MultiPolygon.base_of_json json
@@ -326,7 +347,7 @@ module Make (J : Intf.Json) = struct
                       {
                         geometry = Collection g;
                         properties;
-                        foreign_members = fm;
+                        foreign_members = fm keys_in_use;
                         id;
                       })
                     geo

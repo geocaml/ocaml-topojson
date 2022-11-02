@@ -97,7 +97,7 @@ module type Geometry = sig
     (** Convert a point to a position *)
 
     val v : Position.t -> t
-    (** Create a poitn from a position. *)
+    (** Create a point from a position. *)
   end
 
   module MultiPoint : sig
