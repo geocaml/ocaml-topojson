@@ -69,7 +69,7 @@ A small example how this library is efficient in reading a `json` file _(more pa
   ]);;    
 - : (Topojson.t, [ `Msg of string ]) result = Ok <abstr>
 ```
-### Reading a raw JSON string
+#### Reading a JSON string
 
 ```ocaml
 # let topojson_string =  {|{
@@ -89,7 +89,10 @@ A small example how this library is efficient in reading a `json` file _(more pa
     "type": "Topology"}|};;
 val topojson_string : string =
   "{\n    \"arcs\": [[[0.0, 0.0], [0.0, 9999.0], [2000.0, 0.0], [0.0, -9999.0], [-2000.0, 0.0]]],\n    \"objects\": {\"example \": {\n            \"type\": \"GeometryCollection\",\n            \"geometries\": [\n                {\"coordinates\": [4000.0, 5000.0],\n                 \"properties\": {\"prop0\": \"value0\"},\n     "... (* string length 595; truncated *)
+```
+You can then make use of the TopoJSON function `Topojson.of_json` that takes in the JSON string as an input and converts it to an OCaml value representing a TopoJSON object or an error. 
 
+```ocaml
 # Topojson.of_json ( Ezjsonm.value_from_string topojson_string);; 
 - : (Topojson.t, [ `Msg of string ]) result = Ok <abstr>
 ```
