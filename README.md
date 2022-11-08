@@ -52,7 +52,7 @@ To know more about [TopoJSON](https://github.com/topojson/topojson) and its rela
 
 ## Examples
 
-The first thing to do is initialise the `Topjson` module with a JSON parsing implementation. For these examples we'll use Ezjsonm, the parser can be found in `doc/prelude.txt`.
+The first thing to do is initialise the `Topojson` module with a JSON parsing implementation. For these examples we'll use Ezjsonm, the parser can be found in `doc/prelude.txt`.
 
 ```ocaml
 module Topojson = Topojson.Make (Ezjsonm_parser);;
