@@ -173,6 +173,25 @@ module type Geometry = sig
 
   and t
 
+  val get_point : geometry -> (Point.t, [> `Msg of string ]) result
+  val get_point_exn : geometry -> Point.t
+  val get_multipoint : geometry -> (MultiPoint.t, [> `Msg of string ]) result
+  val get_multipoint_exn : geometry -> MultiPoint.t
+  val get_linestring : geometry -> (LineString.t, [> `Msg of string ]) result
+  val get_linestring_exn : geometry -> LineString.t
+
+  val get_multilinestring :
+    geometry -> (MultiLineString.t, [> `Msg of string ]) result
+
+  val get_multilinestring_exn : geometry -> MultiLineString.t
+  val get_polygon : geometry -> (Polygon.t, [> `Msg of string ]) result
+  val get_polygon_exn : geometry -> Polygon.t
+
+  val get_multipolygon :
+    geometry -> (MultiPolygon.t, [> `Msg of string ]) result
+
+  val get_multipolygon_exn : geometry -> MultiPolygon.t
+
   val properties : t -> properties
   (** [properties t] returns the properties associated with a given object. If
       there aren't any this returns [`None]. The empty list is the empty object
@@ -240,30 +259,4 @@ module type Topojson = sig
   (** A functor that takes a Json parsing implementation and returns a TopoJson
       parser and constructor. *)
   module Make (J : Json) : S with type json = J.t
-end
-
-module type Accessor = sig
-  type t
-
-  module Geometry : Geometry with type t = t
-
-  val get_point :
-    Geometry.geometry -> (Geometry.Point.t, [> `Msg of string ]) result
-
-  val get_point_exn : Geometry.geometry -> Geometry.Point.t
-
-  val get_linestring :
-    Geometry.geometry -> (Geometry.LineString.t, [> `Msg of string ]) result
-
-  val get_linestring_exn : Geometry.geometry -> Geometry.LineString.t
-
-  val get_polygon :
-    Geometry.geometry -> (Geometry.Polygon.t, [> `Msg of string ]) result
-
-  val get_polygon_exn : Geometry.geometry -> Geometry.Polygon.t
-
-  val get_multipolygon :
-    Geometry.geometry -> (Geometry.MultiPolygon.t, [> `Msg of string ]) result
-
-  val get_multipolygon_exn : Geometry.geometry -> Geometry.MultiPolygon.t
 end
