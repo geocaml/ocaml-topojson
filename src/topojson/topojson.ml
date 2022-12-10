@@ -308,6 +308,7 @@ module Make (J : Intf.Json) = struct
       | MultiPolygon p -> p
       | _ -> invalid_arg "Expected multipolygon"
 
+    (* let geometry_to_json geometry  = json *)
     let foreign_members t = t.foreign_members
     let id t = t.id
 

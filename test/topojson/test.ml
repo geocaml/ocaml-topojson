@@ -105,12 +105,59 @@ let get_foreign_members_in_point (f : Topojson.Topology.t) =
   | _ -> assert false
 
 let pp_ezjsonm ppf json = Fmt.pf ppf "%s" (Ezjsonm.value_to_string json)
+let tt = Topojson.Geometry.geometry
+(* let v = Topojson.Geometry.geometry_to_json in
+   Geometry.to_json v *)
+
+let pp ppf tt =
+  Fmt.pf ppf "%s"
+    (Ezjsonm.value_to_string (Topojson.Geometry.geometry_to_json tt))
+
+let pp_coord ppf (v : Topojson.Geometry.geometry list) =
+  Fmt.pf ppf "%a" Fmt.(list pp) v
+
+let coordinates = Alcotest.testable pp_coord Stdlib.( = )
 
 let pp_foreign_member ppf (v : (string * Ezjsonm.value) list) =
   Fmt.pf ppf "%a" Fmt.(list (pair string pp_ezjsonm)) v
 
+let expected_point = [ ("arcs", `A [ `Float 0.1 ]) ]
 let expected_foreign_members = [ ("arcs", `A [ `Float 0.1 ]) ]
 let foreign_members = Alcotest.testable pp_foreign_member Stdlib.( = )
+
+let coords (f : Topojson.Topology.t) =
+  let open Topojson in
+  let objs = List.hd f.objects |> snd in
+  let s = read_file "./test_cases/files/exemplar.json" in
+  let json = Ezjsonm.value_from_string s in
+  let topo = Topojson.of_json json in
+  match topo with
+  | Ok v -> (
+      match Geometry.geometry objs with
+      | Collection [ point; linestring; polygon; multipolygon ] ->
+          let geo_point = [ Geometry.geometry point ] in
+          Alcotest.(check coordinates)
+            "same point" geo_point
+            [ Geometry.geometry objs ];
+          let geo_linestring = [ Geometry.geometry linestring ] in
+          Alcotest.(check coordinates)
+            "same linestring" geo_linestring
+            [ Geometry.geometry objs ];
+          let geo_polygon = [ Geometry.geometry polygon ] in
+          Alcotest.(check coordinates)
+            "same polygon" geo_polygon
+            [ Geometry.geometry objs ];
+          let geo_multipolygon = [ Geometry.geometry multipolygon ] in
+          Alcotest.(check coordinates)
+            "same multipolygon" geo_multipolygon
+            [ Geometry.geometry objs ];
+          let props =
+            List.map Geometry.properties
+              [ point; linestring; polygon; multipolygon ]
+          in
+          props
+      | _ -> Alcotest.fail "Expected a collection of geometries")
+  | _ -> []
 
 let main () =
   let s = read_file "./test_cases/files/exemplar.json" in
