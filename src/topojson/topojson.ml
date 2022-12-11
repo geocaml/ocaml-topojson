@@ -277,7 +277,7 @@ module Make (J : Intf.Json) = struct
 
     let id_of_json json = J.find json [ "id" ]
 
-    let rec base_of_json json =
+    let rec of_json json =
       let fm = foreign_members_of_json json in
       let properties = properties_of_json json in
       let id = id_of_json json in
@@ -341,7 +341,7 @@ module Make (J : Intf.Json) = struct
           | Ok "GeometryCollection" -> (
               match J.find json [ "geometries" ] with
               | Some list ->
-                  let geo = J.to_list (decode_or_err base_of_json) list in
+                  let geo = J.to_list (decode_or_err of_json) list in
                   Result.map
                     (fun g ->
                       {
@@ -421,13 +421,13 @@ module Make (J : Intf.Json) = struct
           List.filter (fun (k, _v) -> not (List.mem k keys_in_use)) assoc
       | Error _ -> []
 
-    let base_of_json json =
+    let of_json json =
       match (J.find json [ "objects" ], J.find json [ "arcs" ]) with
       | Some objects, Some arcs ->
           let* objects = J.to_obj objects in
           let geometries =
             List.map
-              (fun (k, v) -> (k, decode_or_err Geometry.base_of_json v))
+              (fun (k, v) -> (k, decode_or_err Geometry.of_json v))
               objects
           in
           let* arcs =
@@ -470,7 +470,7 @@ module Make (J : Intf.Json) = struct
     | Some typ, bbx -> (
         match J.to_string typ with
         | Ok "Topology" -> (
-            match Topology.base_of_json json with
+            match Topology.of_json json with
             | Ok v ->
                 Ok (topojson_to_t (Topology v) @@ Option.bind bbx json_to_bbox)
             | Error e -> Error e)
