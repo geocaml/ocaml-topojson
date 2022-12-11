@@ -55,6 +55,12 @@ end
 module type Json_conv = sig
   type t
   type json
+
+  val to_json : t -> json
+  (** Convert a [t] to a JSON representation. *)
+
+  val of_json : json -> (t, [ `Msg of string ]) result
+  (** Attempt to deserialise a [t] from JSON.*)
 end
 
 (** {2 topojson Geometry Objects}
@@ -198,7 +204,8 @@ module type Geometry = sig
 
   (** Creates a new Geometry object. *)
 
-  include Json_conv with type t := t and type json := json
+  val to_json : ?bbox:float array -> t -> json
+  val of_json : json -> (t, [ `Msg of string ]) result
 end
 
 module type S = sig
@@ -214,7 +221,8 @@ module type S = sig
       foreign_members : (string * json) list;
     }
 
-    include Json_conv with type t := t and type json := json
+    val to_json : ?bbox:float array -> t -> json
+    val of_json : json -> (t, [ `Msg of string ]) result
   end
 
   type topojson = Topology of Topology.t | Geometry of Geometry.t
