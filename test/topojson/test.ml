@@ -107,13 +107,12 @@ let get_foreign_members_in_point (f : Topojson.Topology.t) =
 let pp_ezjsonm ppf json = Fmt.pf ppf "%s" (Ezjsonm.value_to_string json)
 
 let pp_geometry ppf tt =
-  Fmt.pf ppf "%s"
-    (Ezjsonm.value_to_string (Topojson.Geometry.to_json tt))
+  Fmt.pf ppf "%s" (Ezjsonm.value_to_string (Topojson.Geometry.to_json tt))
 
-let pp_geometry_list ppf (v : Topojson.Geometry.geometry) =
-  Fmt.pf ppf "%a" Fmt.(pp_geometry ) v
+let pp_inner_geometry ppf (g : Topojson.Geometry.geometry) =
+  Fmt.pf ppf "%a" pp_geometry (Topojson.Geometry.v g)
 
-let coordinates = Alcotest.testable pp_geometry_list Stdlib.( = )
+let inner_geometry = Alcotest.testable pp_inner_geometry Stdlib.( = )
 
 let pp_foreign_member ppf (v : (string * Ezjsonm.value) list) =
   Fmt.pf ppf "%a" Fmt.(list (pair string pp_ezjsonm)) v
@@ -121,39 +120,42 @@ let pp_foreign_member ppf (v : (string * Ezjsonm.value) list) =
 let expected_foreign_members = [ ("arcs", `A [ `Float 0.1 ]) ]
 let foreign_members = Alcotest.testable pp_foreign_member Stdlib.( = )
 
-let coords (f : Topojson.Topology.t) =
+let geometries () =
   let open Topojson in
-  let objs = List.hd f.objects |> snd in
   let s = read_file "./test_cases/files/exemplar.json" in
   let json = Ezjsonm.value_from_string s in
-  let topo = Topojson.of_json json in
-  match topo with
-  | Ok v -> (
-      match Geometry.geometry objs with
-      | Collection [ point; linestring; polygon; multipolygon ] ->
-          let geo_point = Geometry.geometry point in
-          Alcotest.(check coordinates)
-            "same point" geo_point
-            [Geometry.geometry objs] ;
-          let geo_linestring = Geometry.geometry linestring in
-          Alcotest.(check coordinates)
-            "same linestring" geo_linestring
-            [ Geometry.geometry objs];
-          let geo_polygon = Geometry.geometry polygon in
-          Alcotest.(check coordinates)
-            "same polygon" geo_polygon
-            [ Geometry.geometry objs ];
-          let geo_multipolygon = Geometry.geometry multipolygon in
-          Alcotest.(check coordinates)
-            "same multipolygon" geo_multipolygon
-            [ Geometry.geometry objs ];
-          let props =
-            List.map Geometry.properties
-              [ point; linestring; polygon; multipolygon ]
-          in
-          props
-      | _ -> Alcotest.fail "Expected a collection of geometries")
-  | _ -> []
+  let o = Topojson.of_json json |> Result.get_ok in
+  let f =
+    Topojson.topojson o |> function
+    | Topology f -> f
+    | _ -> failwith "Expected topology"
+  in
+  let objs = List.hd f.objects |> snd in
+  match Geometry.geometry objs with
+  | Collection [ point; _linestring; _polygon ] ->
+      let geo_point = Geometry.geometry point in
+      let expected =
+        Geometry.(Point (Point.v @@ Position.v ~lng:102. ~lat:0.5 ()))
+      in
+      Alcotest.(check inner_geometry) "same point" geo_point expected
+      (* let geo_linestring = Geometry.geometry linestring in
+         Alcotest.(check coordinates)
+           "same linestring" geo_linestring
+           [ Geometry.geometry objs];
+         let geo_polygon = Geometry.geometry polygon in
+         Alcotest.(check coordinates)
+           "same polygon" geo_polygon
+           [ Geometry.geometry objs ];
+         let geo_multipolygon = Geometry.geometry multipolygon in
+         Alcotest.(check coordinates)
+           "same multipolygon" geo_multipolygon
+           [ Geometry.geometry objs ];
+         let props =
+           List.map Geometry.properties
+             [ point; linestring; polygon; multipolygon ]
+         in
+         props *)
+  | _ -> Alcotest.fail "Expected a collection of geometries"
 
 let main () =
   let s = read_file "./test_cases/files/exemplar.json" in
@@ -179,4 +181,9 @@ let main () =
   | Error (`Msg m), _ -> failwith m
   | _, Error (`Msg m) -> failwith m
 
-let () = Alcotest.run "topojson" [ ("parsing", [ ("simple", `Quick, main) ]) ]
+let () =
+  Alcotest.run "topojson"
+    [
+      ( "parsing",
+        [ ("simple", `Quick, main); ("geometries", `Quick, geometries) ] );
+    ]
