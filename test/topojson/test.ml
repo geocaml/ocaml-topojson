@@ -105,23 +105,19 @@ let get_foreign_members_in_point (f : Topojson.Topology.t) =
   | _ -> assert false
 
 let pp_ezjsonm ppf json = Fmt.pf ppf "%s" (Ezjsonm.value_to_string json)
-let tt = Topojson.Geometry.geometry
-(* let v = Topojson.Geometry.geometry_to_json in
-   Geometry.to_json v *)
 
-let pp ppf tt =
+let pp_geometry ppf tt =
   Fmt.pf ppf "%s"
-    (Ezjsonm.value_to_string (Topojson.Geometry.geometry_to_json tt))
+    (Ezjsonm.value_to_string (Topojson.Geometry.to_json tt))
 
-let pp_coord ppf (v : Topojson.Geometry.geometry list) =
-  Fmt.pf ppf "%a" Fmt.(list pp) v
+let pp_geometry_list ppf (v : Topojson.Geometry.geometry) =
+  Fmt.pf ppf "%a" Fmt.(pp_geometry ) v
 
-let coordinates = Alcotest.testable pp_coord Stdlib.( = )
+let coordinates = Alcotest.testable pp_geometry_list Stdlib.( = )
 
 let pp_foreign_member ppf (v : (string * Ezjsonm.value) list) =
   Fmt.pf ppf "%a" Fmt.(list (pair string pp_ezjsonm)) v
 
-let expected_point = [ ("arcs", `A [ `Float 0.1 ]) ]
 let expected_foreign_members = [ ("arcs", `A [ `Float 0.1 ]) ]
 let foreign_members = Alcotest.testable pp_foreign_member Stdlib.( = )
 
@@ -135,19 +131,19 @@ let coords (f : Topojson.Topology.t) =
   | Ok v -> (
       match Geometry.geometry objs with
       | Collection [ point; linestring; polygon; multipolygon ] ->
-          let geo_point = [ Geometry.geometry point ] in
+          let geo_point = Geometry.geometry point in
           Alcotest.(check coordinates)
             "same point" geo_point
-            [ Geometry.geometry objs ];
-          let geo_linestring = [ Geometry.geometry linestring ] in
+            [Geometry.geometry objs] ;
+          let geo_linestring = Geometry.geometry linestring in
           Alcotest.(check coordinates)
             "same linestring" geo_linestring
-            [ Geometry.geometry objs ];
-          let geo_polygon = [ Geometry.geometry polygon ] in
+            [ Geometry.geometry objs];
+          let geo_polygon = Geometry.geometry polygon in
           Alcotest.(check coordinates)
             "same polygon" geo_polygon
             [ Geometry.geometry objs ];
-          let geo_multipolygon = [ Geometry.geometry multipolygon ] in
+          let geo_multipolygon = Geometry.geometry multipolygon in
           Alcotest.(check coordinates)
             "same multipolygon" geo_multipolygon
             [ Geometry.geometry objs ];

@@ -206,11 +206,6 @@ module type Geometry = sig
   val geometry : t -> geometry
   (** [geometry t] returns the geometry associated with the object. *)
 
-  (* val geometry_v :
-     ?properties:properties ->
-     geometry ->
-     t *)
-  val geometry_to_json : t -> json
 
   val foreign_members : t -> (string * json) list
   (** [foreign_members t] will extract the name-value pairs from an object that
@@ -225,8 +220,7 @@ module type Geometry = sig
     ?properties:properties ->
     ?foreign_members:(string * json) list ->
     geometry ->
-    t ->
-    json
+    t
 
   (** Creates a new Geometry object. *)
 
