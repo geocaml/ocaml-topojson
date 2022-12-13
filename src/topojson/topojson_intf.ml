@@ -206,7 +206,6 @@ module type Geometry = sig
   val geometry : t -> geometry
   (** [geometry t] returns the geometry associated with the object. *)
 
-
   val foreign_members : t -> (string * json) list
   (** [foreign_members t] will extract the name-value pairs from an object that
       are not a part of the TopoJSON specification. *)

@@ -60,8 +60,9 @@ module Make (J : Intf.Json) = struct
       | None, _ ->
           Error
             (`Msg
-              ("JSON should" ^ "have a key-value for `type' whilst parsing "
-             ^ typ))
+              ("JSON should"
+              ^ "have a key-value for `type' whilst parsing "
+              ^ typ))
       | _, None -> Error (`Msg "JSON should have a key-value for `coordinates'")
       | Some typ, Some coords -> (
           let* typ = J.to_string typ in
@@ -74,8 +75,9 @@ module Make (J : Intf.Json) = struct
       | None, _ ->
           Error
             (`Msg
-              ("JSON should" ^ "have a key-value for `type' whilst parsing "
-             ^ typ))
+              ("JSON should"
+              ^ "have a key-value for `type' whilst parsing "
+              ^ typ))
       | _, None -> Error (`Msg "JSON should have a key-value for `arcs'")
       | Some typ, Some arcs -> (
           let* typ = J.to_string typ in
@@ -131,7 +133,8 @@ module Make (J : Intf.Json) = struct
              ("type", J.string typ); ("coordinates", Position.to_json position);
            ]
           @ properties_or_null properties
-          @ bbox_to_json_or_empty bbox @ foreign_members)
+          @ bbox_to_json_or_empty bbox
+          @ foreign_members)
     end
 
     module MultiPoint = struct
@@ -155,7 +158,8 @@ module Make (J : Intf.Json) = struct
              ("coordinates", J.array Position.to_json positions);
            ]
           @ properties_or_null properties
-          @ bbox_to_json_or_empty bbox @ foreign_members)
+          @ bbox_to_json_or_empty bbox
+          @ foreign_members)
     end
 
     module LineString = struct
@@ -170,7 +174,8 @@ module Make (J : Intf.Json) = struct
         J.obj
           ([ ("type", J.string typ); ("arcs", Arcs.to_json arc) ]
           @ properties_or_null properties
-          @ bbox_to_json_or_empty bbox @ foreign_members)
+          @ bbox_to_json_or_empty bbox
+          @ foreign_members)
     end
 
     module MultiLineString = struct
@@ -189,7 +194,8 @@ module Make (J : Intf.Json) = struct
         J.obj
           ([ ("type", J.string typ); ("arcs", J.array Arcs.to_json arcs) ]
           @ properties_or_null properties
-          @ bbox_to_json_or_empty bbox @ foreign_members)
+          @ bbox_to_json_or_empty bbox
+          @ foreign_members)
     end
 
     module Polygon = struct
@@ -212,7 +218,8 @@ module Make (J : Intf.Json) = struct
         J.obj
           ([ ("type", J.string typ); ("arcs", J.array (J.array J.int) arcs) ]
           @ properties_or_null properties
-          @ bbox_to_json_or_empty bbox @ foreign_members)
+          @ bbox_to_json_or_empty bbox
+          @ foreign_members)
     end
 
     module MultiPolygon = struct
@@ -235,7 +242,8 @@ module Make (J : Intf.Json) = struct
              ("arcs", J.array (J.array (J.array J.int)) arcs);
            ]
           @ properties_or_null properties
-          @ bbox_to_json_or_empty bbox @ foreign_members)
+          @ bbox_to_json_or_empty bbox
+          @ foreign_members)
     end
 
     type geometry =
@@ -432,7 +440,8 @@ module Make (J : Intf.Json) = struct
                ("geometries", J.list to_json c);
              ]
             @ properties_or_null t.properties
-            @ bbox_to_json_or_empty bbox @ t.foreign_members)
+            @ bbox_to_json_or_empty bbox
+            @ t.foreign_members)
   end
 
   module Topology = struct
@@ -490,7 +499,8 @@ module Make (J : Intf.Json) = struct
              J.obj (List.map (fun (k, v) -> (k, Geometry.to_json v)) objects) );
            ("arcs", J.array (J.array (J.array J.float)) arcs);
          ]
-        @ bbox_to_json_or_empty bbox @ foreign_members)
+        @ bbox_to_json_or_empty bbox
+        @ foreign_members)
   end
 
   type topojson = Topology of Topology.t | Geometry of Geometry.t
