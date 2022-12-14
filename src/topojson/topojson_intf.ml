@@ -90,11 +90,6 @@ module type Geometry = sig
     (** A position constructor *)
   end
 
-  module Arcs : sig
-    type t
-    (** Arcs is an array of arc indexes *)
-  end
-
   module Point : sig
     type t
     (** A point is a single {!Position.t} *)
@@ -104,6 +99,14 @@ module type Geometry = sig
 
     val v : Position.t -> t
     (** Create a point from a position. *)
+  end
+
+  module Arcs : sig
+    type t
+    (** Arcs is an array of arc indexes *)
+
+    val v : Point.t -> t
+    (** Converts an array to arc *)
   end
 
   module MultiPoint : sig
