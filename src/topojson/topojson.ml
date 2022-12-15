@@ -112,12 +112,6 @@ module Make (J : Intf.Json) = struct
       let to_json arr = J.array J.float arr
     end
 
-    module Arcs = struct
-      type t = int array
-
-      let to_json arr = J.array J.int arr
-    end
-
     module Point = struct
       type t = Position.t
 
@@ -135,6 +129,13 @@ module Make (J : Intf.Json) = struct
           @ properties_or_null properties
           @ bbox_to_json_or_empty bbox
           @ foreign_members)
+    end
+
+    module Arcs = struct
+      type t = int array
+
+      let v t = t
+      let to_json arr = J.array J.int arr
     end
 
     module MultiPoint = struct
@@ -267,6 +268,56 @@ module Make (J : Intf.Json) = struct
 
     let geometry t = t.geometry
     let properties t = t.properties
+
+    let get_point = function
+      | Point p -> Ok p
+      | _ -> Error (`Msg "Expected point")
+
+    let get_point_exn = function
+      | Point p -> p
+      | _ -> invalid_arg "Expected point"
+
+    let get_multipoint = function
+      | MultiPoint p -> Ok p
+      | _ -> Error (`Msg "Expected multipoint")
+
+    let get_multipoint_exn = function
+      | MultiPoint p -> p
+      | _ -> invalid_arg "Expected multipoint"
+
+    let get_linestring = function
+      | LineString p -> Ok p
+      | _ -> Error (`Msg "Expected linestring")
+
+    let get_linestring_exn = function
+      | LineString p -> p
+      | _ -> invalid_arg "Expected linestring"
+
+    let get_multilinestring = function
+      | MultiLineString p -> Ok p
+      | _ -> Error (`Msg "Expected multilinestring")
+
+    let get_multilinestring_exn = function
+      | MultiLineString p -> p
+      | _ -> invalid_arg "Expected multilinestring"
+
+    let get_polygon = function
+      | Polygon p -> Ok p
+      | _ -> Error (`Msg "Expected polygon")
+
+    let get_polygon_exn = function
+      | Polygon p -> p
+      | _ -> invalid_arg "Expected polygon"
+
+    let get_multipolygon = function
+      | MultiPolygon p -> Ok p
+      | _ -> Error (`Msg "Expected multipolygon")
+
+    let get_multipolygon_exn = function
+      | MultiPolygon p -> p
+      | _ -> invalid_arg "Expected multipolygon"
+
+    (* let geometry_to_json geometry  = json *)
     let foreign_members t = t.foreign_members
     let id t = t.id
 

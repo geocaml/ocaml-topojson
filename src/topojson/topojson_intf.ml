@@ -90,11 +90,6 @@ module type Geometry = sig
     (** A position constructor *)
   end
 
-  module Arcs : sig
-    type t
-    (** Arcs is an array of arc indexes *)
-  end
-
   module Point : sig
     type t
     (** A point is a single {!Position.t} *)
@@ -104,6 +99,14 @@ module type Geometry = sig
 
     val v : Position.t -> t
     (** Create a point from a position. *)
+  end
+
+  module Arcs : sig
+    type t
+    (** Arcs is an array of arc indexes *)
+
+    val v : int array -> t
+    (** Converts an array to arc *)
   end
 
   module MultiPoint : sig
@@ -178,6 +181,25 @@ module type Geometry = sig
       ([`None]), could be specifically a null value ([`Null]) or an object. *)
 
   and t
+
+  val get_point : geometry -> (Point.t, [> `Msg of string ]) result
+  val get_point_exn : geometry -> Point.t
+  val get_multipoint : geometry -> (MultiPoint.t, [> `Msg of string ]) result
+  val get_multipoint_exn : geometry -> MultiPoint.t
+  val get_linestring : geometry -> (LineString.t, [> `Msg of string ]) result
+  val get_linestring_exn : geometry -> LineString.t
+
+  val get_multilinestring :
+    geometry -> (MultiLineString.t, [> `Msg of string ]) result
+
+  val get_multilinestring_exn : geometry -> MultiLineString.t
+  val get_polygon : geometry -> (Polygon.t, [> `Msg of string ]) result
+  val get_polygon_exn : geometry -> Polygon.t
+
+  val get_multipolygon :
+    geometry -> (MultiPolygon.t, [> `Msg of string ]) result
+
+  val get_multipolygon_exn : geometry -> MultiPolygon.t
 
   val properties : t -> properties
   (** [properties t] returns the properties associated with a given object. If

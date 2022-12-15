@@ -106,11 +106,51 @@ let get_foreign_members_in_point (f : Topojson.Topology.t) =
 
 let pp_ezjsonm ppf json = Fmt.pf ppf "%s" (Ezjsonm.value_to_string json)
 
+let pp_geometry ppf tt =
+  Fmt.pf ppf "%s" (Ezjsonm.value_to_string (Topojson.Geometry.to_json tt))
+
+let pp_inner_geometry ppf (g : Topojson.Geometry.geometry) =
+  Fmt.pf ppf "%a" pp_geometry (Topojson.Geometry.v g)
+
+let inner_geometry = Alcotest.testable pp_inner_geometry Stdlib.( = )
+
 let pp_foreign_member ppf (v : (string * Ezjsonm.value) list) =
   Fmt.pf ppf "%a" Fmt.(list (pair string pp_ezjsonm)) v
 
 let expected_foreign_members = [ ("arcs", `A [ `Float 0.1 ]) ]
 let foreign_members = Alcotest.testable pp_foreign_member Stdlib.( = )
+
+let geometries () =
+  let open Topojson in
+  let s = read_file "./test_cases/files/exemplar.json" in
+  let json = Ezjsonm.value_from_string s in
+  let o = Topojson.of_json json |> Result.get_ok in
+  let f =
+    Topojson.topojson o |> function
+    | Topology f -> f
+    | _ -> failwith "Expected topology"
+  in
+  let objs = List.hd f.objects |> snd in
+  match Geometry.geometry objs with
+  | Collection [ point; _linestring; _polygon ] ->
+      let geo_point = Geometry.geometry point in
+      let expected_point =
+        Geometry.(Point (Point.v @@ Position.v ~lng:102. ~lat:0.5 ()))
+      in
+      Alcotest.(check inner_geometry) "same point" geo_point expected_point;
+      let geo_linestring = Geometry.geometry _linestring in
+      let expected_linestring =
+        Geometry.(LineString (LineString.v @@ Arcs.v [| 0 |]))
+      in
+      Alcotest.(check inner_geometry)
+        "same point" geo_linestring expected_linestring;
+
+      let geo_polygon = Geometry.geometry _polygon in
+      let expected_polygon =
+        Geometry.(Polygon (Polygon.v [| LineString.v @@ Arcs.v [| -2 |] |]))
+      in
+      Alcotest.(check inner_geometry) "same point" geo_polygon expected_polygon
+  | _ -> Alcotest.fail "Expected a collection of geometries"
 
 let main () =
   let s = read_file "./test_cases/files/exemplar.json" in
@@ -136,4 +176,9 @@ let main () =
   | Error (`Msg m), _ -> failwith m
   | _, Error (`Msg m) -> failwith m
 
-let () = Alcotest.run "topojson" [ ("parsing", [ ("simple", `Quick, main) ]) ]
+let () =
+  Alcotest.run "topojson"
+    [
+      ( "parsing",
+        [ ("simple", `Quick, main); ("geometries", `Quick, geometries) ] );
+    ]
