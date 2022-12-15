@@ -131,7 +131,7 @@ module Make (J : Intf.Json) = struct
           @ foreign_members)
     end
     module Arcs = struct
-      type t = int array | float array
+      type t = int array
       let v t = t
 
       let to_json arr = J.array J.int arr

@@ -105,7 +105,7 @@ module type Geometry = sig
     type t
     (** Arcs is an array of arc indexes *)
 
-    val v : Point.t -> t
+    val v : float array -> t
     (** Converts an array to arc *)
   end
 
