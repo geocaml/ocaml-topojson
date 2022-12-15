@@ -130,12 +130,14 @@ module Make (J : Intf.Json) = struct
           @ bbox_to_json_or_empty bbox
           @ foreign_members)
     end
+
     module Arcs = struct
       type t = int array
-      let v t = t
 
+      let v t = t
       let to_json arr = J.array J.int arr
     end
+
     module MultiPoint = struct
       type t = Point.t array
 
