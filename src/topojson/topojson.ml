@@ -38,7 +38,18 @@ module Make (J : Intf.Json) = struct
         "geometries";
       ]
 
-    let foreign_members_of_json json =
+    let keys_in_use_for_point =
+      [
+        "type";
+        "properties";
+        "coordinates";
+        "bbox";
+        "id";
+        "objects";
+        "geometries";
+      ]
+
+    let foreign_members_of_json json keys_in_use =
       match J.to_obj json with
       | Ok assoc ->
           List.filter (fun (k, _v) -> not (List.mem k keys_in_use)) assoc
@@ -101,12 +112,6 @@ module Make (J : Intf.Json) = struct
       let to_json arr = J.array J.float arr
     end
 
-    module Arcs = struct
-      type t = int array
-
-      let to_json arr = J.array J.int arr
-    end
-
     module Point = struct
       type t = Position.t
 
@@ -124,6 +129,13 @@ module Make (J : Intf.Json) = struct
           @ properties_or_null properties
           @ bbox_to_json_or_empty bbox
           @ foreign_members)
+    end
+
+    module Arcs = struct
+      type t = int array
+
+      let v t = t
+      let to_json arr = J.array J.int arr
     end
 
     module MultiPoint = struct
@@ -256,6 +268,56 @@ module Make (J : Intf.Json) = struct
 
     let geometry t = t.geometry
     let properties t = t.properties
+
+    let get_point = function
+      | Point p -> Ok p
+      | _ -> Error (`Msg "Expected point")
+
+    let get_point_exn = function
+      | Point p -> p
+      | _ -> invalid_arg "Expected point"
+
+    let get_multipoint = function
+      | MultiPoint p -> Ok p
+      | _ -> Error (`Msg "Expected multipoint")
+
+    let get_multipoint_exn = function
+      | MultiPoint p -> p
+      | _ -> invalid_arg "Expected multipoint"
+
+    let get_linestring = function
+      | LineString p -> Ok p
+      | _ -> Error (`Msg "Expected linestring")
+
+    let get_linestring_exn = function
+      | LineString p -> p
+      | _ -> invalid_arg "Expected linestring"
+
+    let get_multilinestring = function
+      | MultiLineString p -> Ok p
+      | _ -> Error (`Msg "Expected multilinestring")
+
+    let get_multilinestring_exn = function
+      | MultiLineString p -> p
+      | _ -> invalid_arg "Expected multilinestring"
+
+    let get_polygon = function
+      | Polygon p -> Ok p
+      | _ -> Error (`Msg "Expected polygon")
+
+    let get_polygon_exn = function
+      | Polygon p -> p
+      | _ -> invalid_arg "Expected polygon"
+
+    let get_multipolygon = function
+      | MultiPolygon p -> Ok p
+      | _ -> Error (`Msg "Expected multipolygon")
+
+    let get_multipolygon_exn = function
+      | MultiPolygon p -> p
+      | _ -> invalid_arg "Expected multipolygon"
+
+    (* let geometry_to_json geometry  = json *)
     let foreign_members t = t.foreign_members
     let id t = t.id
 
@@ -266,7 +328,7 @@ module Make (J : Intf.Json) = struct
 
     let id_of_json json = J.find json [ "id" ]
 
-    let rec base_of_json json =
+    let rec of_json json =
       let fm = foreign_members_of_json json in
       let properties = properties_of_json json in
       let id = id_of_json json in
@@ -275,14 +337,19 @@ module Make (J : Intf.Json) = struct
           match J.to_string typ with
           | Ok "Point" ->
               Result.map (fun g ->
-                  { geometry = Point g; properties; foreign_members = fm; id })
+                  {
+                    geometry = Point g;
+                    properties;
+                    foreign_members = fm keys_in_use_for_point;
+                    id;
+                  })
               @@ Point.base_of_json json
           | Ok "MultiPoint" ->
               Result.map (fun g ->
                   {
                     geometry = MultiPoint g;
                     properties;
-                    foreign_members = fm;
+                    foreign_members = fm keys_in_use_for_point;
                     id;
                   })
               @@ MultiPoint.base_of_json json
@@ -291,7 +358,7 @@ module Make (J : Intf.Json) = struct
                   {
                     geometry = LineString g;
                     properties;
-                    foreign_members = fm;
+                    foreign_members = fm keys_in_use;
                     id;
                   })
               @@ LineString.base_of_json json
@@ -300,33 +367,38 @@ module Make (J : Intf.Json) = struct
                   {
                     geometry = MultiLineString g;
                     properties;
-                    foreign_members = fm;
+                    foreign_members = fm keys_in_use;
                     id;
                   })
               @@ MultiLineString.base_of_json json
           | Ok "Polygon" ->
               Result.map (fun g ->
-                  { geometry = Polygon g; properties; foreign_members = fm; id })
+                  {
+                    geometry = Polygon g;
+                    properties;
+                    foreign_members = fm keys_in_use;
+                    id;
+                  })
               @@ Polygon.base_of_json json
           | Ok "MultiPolygon" ->
               Result.map (fun g ->
                   {
                     geometry = MultiPolygon g;
                     properties;
-                    foreign_members = fm;
+                    foreign_members = fm keys_in_use;
                     id;
                   })
               @@ MultiPolygon.base_of_json json
           | Ok "GeometryCollection" -> (
               match J.find json [ "geometries" ] with
               | Some list ->
-                  let geo = J.to_list (decode_or_err base_of_json) list in
+                  let geo = J.to_list (decode_or_err of_json) list in
                   Result.map
                     (fun g ->
                       {
                         geometry = Collection g;
                         properties;
-                        foreign_members = fm;
+                        foreign_members = fm keys_in_use;
                         id;
                       })
                     geo
@@ -380,10 +452,7 @@ module Make (J : Intf.Json) = struct
       objects : (string * Geometry.t) list;
       arcs : Geometry.Position.t array array;
       foreign_members : (string * json) list;
-      transform : transform option;
     }
-
-    and transform = { scale : float * float; translate : float * float }
 
     let keys_in_use =
       [
@@ -403,21 +472,13 @@ module Make (J : Intf.Json) = struct
           List.filter (fun (k, _v) -> not (List.mem k keys_in_use)) assoc
       | Error _ -> []
 
-    let transform_of_json json =
-      match J.to_obj json with
-      | Ok json ->
-          let scale = List.map (fun (k, v) -> (decode_or_err J.to_float k, decode_or_err J.to_float v)) json in
-          let translate =   List.map (fun (k, v) -> (decode_or_err J.to_float k, decode_or_err J.to_float v)) json  in
-           {scale , translate }
-      | Error _ -> {}
-
-    let base_of_json json =
+    let of_json json =
       match (J.find json [ "objects" ], J.find json [ "arcs" ]) with
       | Some objects, Some arcs ->
           let* objects = J.to_obj objects in
           let geometries =
             List.map
-              (fun (k, v) -> (k, decode_or_err Geometry.base_of_json v))
+              (fun (k, v) -> (k, decode_or_err Geometry.of_json v))
               objects
           in
           let* arcs =
@@ -427,19 +488,17 @@ module Make (J : Intf.Json) = struct
                     (decode_or_err (J.to_array (decode_or_err J.to_float)))))
               arcs
           in
-          let transform = transform_of_json json in
           let fm = foreign_members_of_json json in
-          Ok { objects = geometries; arcs; transform; foreign_members = fm }
+          Ok { objects = geometries; arcs; foreign_members = fm }
       | _, _ -> Error (`Msg "No objects and/or arcs field in Topology object!")
 
-    let to_json ?bbox { objects; arcs; foreign_members; transform } =
+    let to_json ?bbox { objects; arcs; foreign_members } =
       J.obj
         ([
            ("type", J.string "Topology");
            ( "objects",
              J.obj (List.map (fun (k, v) -> (k, Geometry.to_json v)) objects) );
            ("arcs", J.array (J.array (J.array J.float)) arcs);
-           ("transform", J.obj [ "scale", J.array J.float [| fst t.scale; snd t.scale |]] transform);
          ]
         @ bbox_to_json_or_empty bbox
         @ foreign_members)
@@ -462,7 +521,7 @@ module Make (J : Intf.Json) = struct
     | Some typ, bbx -> (
         match J.to_string typ with
         | Ok "Topology" -> (
-            match Topology.base_of_json json with
+            match Topology.of_json json with
             | Ok v ->
                 Ok (topojson_to_t (Topology v) @@ Option.bind bbx json_to_bbox)
             | Error e -> Error e)
