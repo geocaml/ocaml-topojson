@@ -135,19 +135,17 @@ let geometries () =
   | Collection [ point; _linestring; _polygon ] ->
       let geo_point = Geometry.geometry point in
       let expected_point =
-        Geometry.(Point (Point.v @@ Position.v ~lng:102. ~lat:0.5 ()))
+        Geometry.(point (Position.v ~lng:102. ~lat:0.5 ()))
       in
       Alcotest.(check inner_geometry) "same point" geo_point expected_point;
       let geo_linestring = Geometry.geometry _linestring in
-      let expected_linestring =
-        Geometry.(LineString (LineString.v @@ Arcs.v [| 0 |]))
-      in
+      let expected_linestring = Geometry.(linestring @@ Arc_index.v [| 0 |]) in
       Alcotest.(check inner_geometry)
         "same point" geo_linestring expected_linestring;
 
       let geo_polygon = Geometry.geometry _polygon in
       let expected_polygon =
-        Geometry.(Polygon (Polygon.v [| LineString.v @@ Arcs.v [| -2 |] |]))
+        Geometry.(polygon [| LineString.v @@ Arc_index.v [| -2 |] |])
       in
       Alcotest.(check inner_geometry) "same point" geo_polygon expected_polygon
   | _ -> Alcotest.fail "Expected a collection of geometries"

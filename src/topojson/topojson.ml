@@ -131,7 +131,7 @@ module Make (J : Intf.Json) = struct
           @ foreign_members)
     end
 
-    module Arcs = struct
+    module Arc_index = struct
       type t = int array
 
       let v t = t
@@ -164,7 +164,7 @@ module Make (J : Intf.Json) = struct
     end
 
     module LineString = struct
-      type t = Arcs.t
+      type t = Arc_index.t
 
       let typ = "LineString"
       let v arc = arc
@@ -173,7 +173,7 @@ module Make (J : Intf.Json) = struct
 
       let to_json ?bbox ?(properties = `None) ?(foreign_members = []) arc =
         J.obj
-          ([ ("type", J.string typ); ("arcs", Arcs.to_json arc) ]
+          ([ ("type", J.string typ); ("arcs", Arc_index.to_json arc) ]
           @ properties_or_null properties
           @ bbox_to_json_or_empty bbox
           @ foreign_members)
@@ -193,7 +193,7 @@ module Make (J : Intf.Json) = struct
 
       let to_json ?bbox ?(properties = `None) ?(foreign_members = []) arcs =
         J.obj
-          ([ ("type", J.string typ); ("arcs", J.array Arcs.to_json arcs) ]
+          ([ ("type", J.string typ); ("arcs", J.array Arc_index.to_json arcs) ]
           @ properties_or_null properties
           @ bbox_to_json_or_empty bbox
           @ foreign_members)
@@ -268,6 +268,13 @@ module Make (J : Intf.Json) = struct
 
     let geometry t = t.geometry
     let properties t = t.properties
+    let point t = Point (Point.v t)
+    let multipoint t = MultiPoint (MultiPoint.v t)
+    let linestring t = LineString (LineString.v t)
+    let multilinestring t = MultiLineString (MultiLineString.v t)
+    let polygon p = Polygon (Polygon.v p)
+    let multipolygon mp = MultiPolygon (MultiPolygon.v mp)
+    let collection cs = Collection cs
 
     let get_point = function
       | Point p -> Ok p
