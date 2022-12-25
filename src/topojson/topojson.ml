@@ -335,7 +335,7 @@ module Make (J : Intf.Json) = struct
 
     let id_of_json json = J.find json [ "id" ]
 
-    let rec of_json json =
+    let rec base_of_json json =
       let fm = foreign_members_of_json json in
       let properties = properties_of_json json in
       let id = id_of_json json in
@@ -399,7 +399,7 @@ module Make (J : Intf.Json) = struct
           | Ok "GeometryCollection" -> (
               match J.find json [ "geometries" ] with
               | Some list ->
-                  let geo = J.to_list (decode_or_err of_json) list in
+                  let geo = J.to_list (decode_or_err base_of_json) list in
                   Result.map
                     (fun g ->
                       {
@@ -459,7 +459,10 @@ module Make (J : Intf.Json) = struct
       objects : (string * Geometry.t) list;
       arcs : Geometry.Position.t array array;
       foreign_members : (string * json) list;
+      transform : transform option;
     }
+
+    and transform = { scale : float * float; translate : float * float }
 
     let keys_in_use =
       [
@@ -479,13 +482,22 @@ module Make (J : Intf.Json) = struct
           List.filter (fun (k, _v) -> not (List.mem k keys_in_use)) assoc
       | Error _ -> []
 
-    let of_json json =
+    let transform_of_json json =
+      match J.to_obj json with
+      | Ok json  ->
+        let scale = (decode_or_err J.to_float (J.obj json), decode_or_err J.to_float (J.obj json)) in
+        let translate = (decode_or_err J.to_float (J.obj json), decode_or_err J.to_float (J.obj json))  in
+        {scale; translate }
+
+      | Error _ -> {}
+
+    let base_of_json json =
       match (J.find json [ "objects" ], J.find json [ "arcs" ]) with
       | Some objects, Some arcs ->
           let* objects = J.to_obj objects in
           let geometries =
             List.map
-              (fun (k, v) -> (k, decode_or_err Geometry.of_json v))
+              (fun (k, v) -> (k, decode_or_err Geometry.base_of_json v))
               objects
           in
           let* arcs =
@@ -495,17 +507,19 @@ module Make (J : Intf.Json) = struct
                     (decode_or_err (J.to_array (decode_or_err J.to_float)))))
               arcs
           in
+          let transform = transform_of_json json in
           let fm = foreign_members_of_json json in
-          Ok { objects = geometries; arcs; foreign_members = fm }
+          Ok { objects = geometries; arcs; transform; foreign_members = fm }
       | _, _ -> Error (`Msg "No objects and/or arcs field in Topology object!")
 
-    let to_json ?bbox { objects; arcs; foreign_members } =
+    let to_json ?bbox { objects; arcs; foreign_members; transform } =
       J.obj
         ([
            ("type", J.string "Topology");
            ( "objects",
              J.obj (List.map (fun (k, v) -> (k, Geometry.to_json v)) objects) );
            ("arcs", J.array (J.array (J.array J.float)) arcs);
+           ("transform", J.obj [ "scale", J.array J.float [| fst t.scale; snd t.scale |]] );
          ]
         @ bbox_to_json_or_empty bbox
         @ foreign_members)
@@ -528,7 +542,7 @@ module Make (J : Intf.Json) = struct
     | Some typ, bbx -> (
         match J.to_string typ with
         | Ok "Topology" -> (
-            match Topology.of_json json with
+            match Topology.base_of_json json with
             | Ok v ->
                 Ok (topojson_to_t (Topology v) @@ Option.bind bbx json_to_bbox)
             | Error e -> Error e)
