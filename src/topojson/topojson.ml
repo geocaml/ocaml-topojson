@@ -483,13 +483,24 @@ module Make (J : Intf.Json) = struct
       | Error _ -> []
 
     let transform_of_json json =
-      match J.to_obj json with
-      | Ok json  ->
-        let scale = (decode_or_err J.to_float (J.obj json), decode_or_err J.to_float (J.obj json)) in
-        let translate = (decode_or_err J.to_float (J.obj json), decode_or_err J.to_float (J.obj json))  in
-        {scale; translate }
-
-      | Error _ -> {}
+      match J.find json [ "transform " ] with
+      | None -> None
+      | Some transform_object ->
+          let scale =
+            decode_or_err
+              (J.to_array (decode_or_err J.to_float))
+              transform_object
+          in
+          let translate =
+            decode_or_err
+              (J.to_array (decode_or_err J.to_float))
+              transform_object
+          in
+          Some
+            {
+              scale = (scale.(0), scale.(1));
+              translate = (translate.(0), translate.(1));
+            }
 
     let base_of_json json =
       match (J.find json [ "objects" ], J.find json [ "arcs" ]) with
@@ -519,7 +530,13 @@ module Make (J : Intf.Json) = struct
            ( "objects",
              J.obj (List.map (fun (k, v) -> (k, Geometry.to_json v)) objects) );
            ("arcs", J.array (J.array (J.array J.float)) arcs);
-           ("transform", J.obj [ "scale", J.array J.float [| fst t.scale; snd t.scale |]] );
+           ( "transform",
+             J.obj
+               [
+                 ( "scale",
+                   J.array J.float
+                     [| fst transform.scale; snd transform.scale |] );
+               ] );
          ]
         @ bbox_to_json_or_empty bbox
         @ foreign_members)
