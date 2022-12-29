@@ -15,7 +15,7 @@ A collection of libraries in pure OCaml for _parsing, constructing, and manipula
 
 
 ## Introduction
-TopoJSON is an enhanced format for encoding GeoJSON geospatial data. In addition to the GeoJSON geometry types, viz. "Point", "LineString", "Polygon", "MultiPoint", "MultiLineString", "MultiPolygon", and "GeometryCollection", TopoJSON instigates a new type "Topology", which comprises of GeoJSON objects. A _topology_ has a field `objects` mapped with one or more geometry objects by its name type. 
+TopoJSON is an enhanced format for encoding GeoJSON geospatial data. In addition to the GeoJSON geometry types, viz. "Point", "LineString", "Polygon", "MultiPoint", "MultiLineString", "MultiPolygon", and "GeometryCollection", TopoJSON instigates a new type "Topology", which comprises of GeoJSON objects. A _topology_ has a field `objects` mapped with one or more geometry objects by its name type.
 
 ### TopoJSON Vs GeoJSON
 TopoJSON has an `arcs` member which consists of the `coordinates` of the geometry types (except "Point" and "MultiPoint"). The value of the _"arcs"_ member is an array of arrays of positions. This is a primary advantage over GeoJSON objects where each individual geometries have their own separately defined coordinates.
@@ -62,11 +62,11 @@ module Topojson = Topojson.Make (Ezjsonm_parser);;
 A small example how this library is efficient in reading a `json` file _(more particulary a `TopoJSON` file)_. This illustration depicts a *TopoJSON* `object` with type `"Topology"` which itself consists of a *Geomtery object* `"Polygon"`.
 
 ```ocaml
-# Topojson.of_json ( `O [ 
-  ("type", `String "Topology"); 
-  ("objects" , `O [  ("Instance" , `O [("type", `String "Polygon"); ("arcs", `A [ `A [`Float 0.]]) ]) ])  ; 
+# Topojson.of_json ( `O [
+  ("type", `String "Topology");
+  ("objects" , `O [  ("Instance" , `O [("type", `String "Polygon"); ("arcs", `A [ `A [`Float 0.]]) ]) ])  ;
   ("arcs", `A [ `A [ `A [`Float 100.;`Float 0.]; `A [`Float 101.; `Float 0.]; `A [`Float 101.; `Float 1.]; `A [`Float 100.; `Float 1.]; `A [`Float 100.; `Float 0.]]] );
-  ]);;    
+  ]);;
 - : (Topojson.t, [ `Msg of string ]) result = Ok <abstr>
 ```
 #### Reading a JSON string
@@ -90,10 +90,32 @@ A small example how this library is efficient in reading a `json` file _(more pa
 val topojson_string : string =
   "{\n    \"arcs\": [[[0.0, 0.0], [0.0, 9999.0], [2000.0, 0.0], [0.0, -9999.0], [-2000.0, 0.0]]],\n    \"objects\": {\"example \": {\n            \"type\": \"GeometryCollection\",\n            \"geometries\": [\n                {\"coordinates\": [4000.0, 5000.0],\n                 \"properties\": {\"prop0\": \"value0\"},\n     "... (* string length 595; truncated *)
 ```
-You can then make use of the TopoJSON function `Topojson.of_json` that takes in the JSON string as an input and converts it to an OCaml value representing a TopoJSON object or an error. 
+You can then make use of the TopoJSON function `Topojson.of_json` that takes in the JSON string as an input and converts it to an OCaml value representing a TopoJSON object or an error.
 
 ```ocaml
-# Topojson.of_json ( Ezjsonm.value_from_string topojson_string);; 
+# Topojson.of_json ( Ezjsonm.value_from_string topojson_string);;
 - : (Topojson.t, [ `Msg of string ]) result = Ok <abstr>
 ```
 
+### Example of building a TopoJSON object and writing it to a string
+
+```ocaml
+let topojson =
+  let objects = [ { "example": "type" = "GeometryCollection"; geometries = [{
+                "type" = "Point";properties = {prop0 = "value0"};coordinates = [102; 0.5]}; {"type" = "LineString";properties = { prop0 = "value0";prop1 = 0}; arcs = [0]
+             } ; {
+                "type" = "Polygon"; properties = { prop0 = "value0";  prop1 = { this = "that" }};
+                arcs = [[-2]] } ]; arcs = [[[102; 0];[103; 1];[104; 0];[105; 1]];
+
+            ] }]
+  let topology = Topology.v objects arcs in
+  Topojson.v topology
+
+let bbox = [| 1.2; 2.1; 3.1; |]
+let type_t =  vals_of_t topojs bbox
+(* calling the contructor *)
+let topoJson_object = topojson type_t
+(* converting type_t to tponJson_object *)
+let str = Topology.to_json topoJson_object
+ (* converting tponJson_object to string *)
+```

@@ -264,7 +264,7 @@ module type S = sig
 
   val topojson : t -> topojson
   val bbox : t -> float array option
-
+  val vals_of_t : topojson -> topojson -> float array option -> t
   val of_json : json -> (t, [ `Msg of string ]) result
   (** [of_json json] converts the JSON to a topojson object (a type {!t}) or an
       error. *)
