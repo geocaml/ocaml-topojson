@@ -93,29 +93,16 @@ val topojson_string : string =
 You can then make use of the TopoJSON function `Topojson.of_json` that takes in the JSON string as an input and converts it to an OCaml value representing a TopoJSON object or an error.
 
 ```ocaml
-# Topojson.of_json ( Ezjsonm.value_from_string topojson_string);;
-- : (Topojson.t, [ `Msg of string ]) result = Ok <abstr>
-```
-
-### Example of building a TopoJSON object and writing it to a string
-
-```ocaml
 let topojson =
-  let objects = [ { "example": "type" = "GeometryCollection"; geometries = [{
-                "type" = "Point";properties = {prop0 = "value0"};coordinates = [102; 0.5]}; {"type" = "LineString";properties = { prop0 = "value0";prop1 = 0}; arcs = [0]
-             } ; {
-                "type" = "Polygon"; properties = { prop0 = "value0";  prop1 = { this = "that" }};
-                arcs = [[-2]] } ]; arcs = [[[102; 0];[103; 1];[104; 0];[105; 1]];
+      Topojson.Geometry.(v
+      ~foreign_members:["7", `String "8"]
+      (LineString (LineString.v (Arc_index.v [|2|]))));;
+   let t = Topojson.(v (Geometry topojs));;
 
-            ] }]
-  let topology = Topology.v objects arcs in
-  Topojson.v topology
+   Topojson.to_json t |> Ezjsonm.value_to_string;;
+ - : string =
+  "{\"type\":\"LineString\",\"arcs\":[2],\"7\":\"8\"}"
 
-let bbox = [| 1.2; 2.1; 3.1; |]
-let type_t =  vals_of_t topojs bbox
-(* calling the contructor *)
-let topoJson_object = topojson type_t
-(* converting type_t to tponJson_object *)
-let str = Topology.to_json topoJson_object
- (* converting tponJson_object to string *)
+      let bbox = [| 1.2; 2.1; 3.1; |]
+    (* let v (bbox:float array)  topojson:topojson =    t *)
 ```

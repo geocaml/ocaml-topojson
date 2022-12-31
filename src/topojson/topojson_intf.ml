@@ -5,7 +5,7 @@ module type Json = sig
   (** The type your parser uses to represent a parsed JSON object. *)
 
   val find : t -> string list -> t option
-
+ val t: t
   val to_string : t -> (string, [ `Msg of string ]) result
   (** Convert the JSON to a string. *)
 
@@ -217,7 +217,7 @@ module type Geometry = sig
   (** [properties t] returns the properties associated with a given object. If
       there aren't any this returns [`None]. The empty list is the empty object
       [{}]. *)
-
+val p : properties
   val geometry : t -> geometry
   (** [geometry t] returns the geometry associated with the object. *)
 
@@ -264,7 +264,8 @@ module type S = sig
 
   val topojson : t -> topojson
   val bbox : t -> float array option
-  val vals_of_t : topojson -> topojson -> float array option -> t
+  val topojs : Geometry.t
+  val v : ?bbox:float array -> topojson -> t
   val of_json : json -> (t, [ `Msg of string ]) result
   (** [of_json json] converts the JSON to a topojson object (a type {!t}) or an
       error. *)
