@@ -69,7 +69,7 @@ A small example how this library is efficient in reading a `json` file _(more pa
   ]);;
 - : (Topojson.t, [ `Msg of string ]) result = Ok <abstr>
 ```
-#### Reading a JSON string
+#### Working with strings
 
 ```ocaml
 # let topojson_string =  {|{
@@ -90,19 +90,31 @@ A small example how this library is efficient in reading a `json` file _(more pa
 val topojson_string : string =
   "{\n    \"arcs\": [[[0.0, 0.0], [0.0, 9999.0], [2000.0, 0.0], [0.0, -9999.0], [-2000.0, 0.0]]],\n    \"objects\": {\"example \": {\n            \"type\": \"GeometryCollection\",\n            \"geometries\": [\n                {\"coordinates\": [4000.0, 5000.0],\n                 \"properties\": {\"prop0\": \"value0\"},\n     "... (* string length 595; truncated *)
 ```
+
 You can then make use of the TopoJSON function `Topojson.of_json` that takes in the JSON string as an input and converts it to an OCaml value representing a TopoJSON object or an error.
 
+It is also possible to build TopoJSON values and convert them to a string.
+
 ```ocaml
-let topojson =
+# let topojson =
       Topojson.Geometry.(v
-      ~foreign_members:["7", `String "8"]
-      (LineString (LineString.v (Arc_index.v [|2|]))));;
-   let t = Topojson.(v (Geometry topojs));;
+      ~foreign_members:["foreign", `String "8"]
+      (LineString (LineString.v (Arc_index.v [| 0 |]))));;
+val topojson : Topojson.Geometry.t = <abstr>
+```
 
-   Topojson.to_json t |> Ezjsonm.value_to_string;;
- - : string =
-  "{\"type\":\"LineString\",\"arcs\":[2],\"7\":\"8\"}"
+We can then add this linestring into a topology object.
 
-      let bbox = [| 1.2; 2.1; 3.1; |]
-    (* let v (bbox:float array)  topojson:topojson =    t *)
+```ocaml
+# let arcs = Topojson.Geometry.[| [| Position.v ~lat:0. ~lng:0. () |] |];;
+val arcs : Topojson.Geometry.Position.t array array = [|[|<abstr>|]|]
+# let topology = Topojson.Topology.v ~arcs [ "example", topojson ];;
+val topology : Topojson.Topology.t =
+  {Topojson.Topology.objects = [("example", <abstr>)];
+   arcs = [|[|<abstr>|]|]; foreign_members = []}
+# let t = Topojson.v (Topology topology);;
+val t : Topojson.t = <abstr>
+# Topojson.to_json t |> Ezjsonm.value_to_string;;
+- : string =
+"{\"type\":\"Topology\",\"objects\":{\"example\":{\"type\":\"LineString\",\"arcs\":[0],\"foreign\":\"8\"}},\"arcs\":[[[0,0]]]}"
 ```
