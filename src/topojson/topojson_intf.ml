@@ -253,7 +253,10 @@ module type S = sig
       objects : (string * Geometry.t) list;
       arcs : Geometry.Position.t array array;
       foreign_members : (string * json) list;
+      transform : transform option;
     }
+
+    and transform = { scale : float * float; translate : float * float }
 
     val to_json : ?bbox:float array -> t -> json
     val of_json : json -> (t, [ `Msg of string ]) result

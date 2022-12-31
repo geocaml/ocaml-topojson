@@ -126,7 +126,7 @@ and transform = { scale : float * float; translate : float * float }
 let pp_transform ppf = Fmt.pf ppf "%a" transform
 let expected_transform = { scale = (0.0005, 0.0001); translate = (100.0, 0.0) }
 
-let pp_expected_transform ppf (v : transform option) =
+let pp_expected_transform ppf (v : Topojson.Topology.transform option) =
   Fmt.pf ppf "%a" Fmt.(pp_transform) v
 
 let transform_ = Alcotest.testable pp_expected_transform Stdlib.( = )

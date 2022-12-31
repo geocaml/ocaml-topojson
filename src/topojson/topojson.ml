@@ -531,12 +531,18 @@ module Make (J : Intf.Json) = struct
              J.obj (List.map (fun (k, v) -> (k, Geometry.to_json v)) objects) );
            ("arcs", J.array (J.array (J.array J.float)) arcs);
            ( "transform",
-             J.obj
-               [
-                 ( "scale",
-                   J.array J.float
-                     [| fst transform.scale; snd transform.scale |] );
-               ] );
+             match transform with
+             | Some t ->
+                 J.obj
+                   [
+                     ( "scale",
+                       J.obj
+                         [
+                           ( "scale",
+                             J.array J.float [| fst t.scale; snd t.scale |] );
+                         ] );
+                   ]
+             | None -> J.obj [] );
          ]
         @ bbox_to_json_or_empty bbox
         @ foreign_members)
