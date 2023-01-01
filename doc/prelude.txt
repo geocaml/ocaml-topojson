@@ -20,3 +20,4 @@ module Ezjsonm_parser = struct
   let null = `Null
   let is_null = function `Null -> true | _ -> false
 end;;
+open Topojson;;
