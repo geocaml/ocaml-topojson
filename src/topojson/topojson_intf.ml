@@ -260,8 +260,8 @@ module type S = sig
       arcs:Geometry.Position.t array array ->
       (string * Geometry.t) list ->
       t
-    (** Construct a new topology object getting the arcs and the
-        geometry objects. *)
+    (** Construct a new topology object getting the arcs and the geometry
+        objects. *)
 
     val to_json : ?bbox:float array -> t -> json
     val of_json : json -> (t, [ `Msg of string ]) result
