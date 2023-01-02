@@ -255,6 +255,14 @@ module type S = sig
       foreign_members : (string * json) list;
     }
 
+    val v :
+      ?foreign_members:(string * json) list ->
+      arcs:Geometry.Position.t array array ->
+      (string * Geometry.t) list ->
+      t
+    (** Construct a new topology object getting the arcs and the geometry
+        objects. *)
+
     val to_json : ?bbox:float array -> t -> json
     val of_json : json -> (t, [ `Msg of string ]) result
   end
@@ -264,6 +272,9 @@ module type S = sig
 
   val topojson : t -> topojson
   val bbox : t -> float array option
+
+  val v : ?bbox:float array -> topojson -> t
+  (** Construct a new TopoJSON object, optionally with a bounding-box. *)
 
   val of_json : json -> (t, [ `Msg of string ]) result
   (** [of_json json] converts the JSON to a topojson object (a type {!t}) or an
