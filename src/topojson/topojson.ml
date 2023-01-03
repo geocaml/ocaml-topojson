@@ -463,6 +463,9 @@ module Make (J : Intf.Json) = struct
     }
 
     and transform = { scale : float * float; translate : float * float }
+    
+    let v ?(foreign_members = []) ~arcs objects =
+      { foreign_members; arcs; objects }
 
     let keys_in_use =
       [
@@ -576,4 +579,6 @@ module Make (J : Intf.Json) = struct
   let to_json = function
     | { topojson = Topology f; bbox } -> Topology.to_json ?bbox f
     | { topojson = Geometry g; bbox } -> Geometry.to_json ?bbox g
+
+  let v ?bbox topojson = { bbox; topojson }
 end
