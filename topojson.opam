@@ -16,7 +16,6 @@ depends: [
   "mdx" {>= "1.10.0" & with-test}
   "alcotest" {with-test}
   "ezjsonm" {with-test}
-  "geojson" {with-test}
   "odoc" {with-doc}
 ]
 build: [
@@ -36,6 +35,3 @@ build: [
   ["dune" "install" "-p" name "--create-install-files" name]
 ]
 dev-repo: "git+https://github.com/patricoferris/ocaml-topojson.git"
-pin-depends: [
-  [ "geojson.dev" "git+https://github.com/geocaml/ocaml-geojson#fd422ecee7fc606e5f24a21bb27a9b5825d87efd" ]
-]

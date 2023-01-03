@@ -23,8 +23,7 @@
    (bechamel-notty (and (>= 0.1.0) :with-test))
    (mdx (and (>= 1.10.0) :with-test))
    (alcotest :with-test)
-   (ezjsonm  :with-test)
-   (geojson  :with-test)))
+   (ezjsonm  :with-test)))
 
 (package
  (name topojsonm)

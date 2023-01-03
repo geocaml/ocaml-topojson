@@ -101,12 +101,12 @@ module type Geometry = sig
     (** Create a point from a position. *)
   end
 
-  module Arcs : sig
+  module Arc_index : sig
     type t
-    (** Arcs is an array of arc indexes *)
+    (** An array of indexes into the arcs field. *)
 
     val v : int array -> t
-    (** Converts an array to arc *)
+    (** A constructors for building an arc-index from an integer array. *)
   end
 
   module MultiPoint : sig
@@ -124,8 +124,8 @@ module type Geometry = sig
     type t
     (** A line string is two or more points *)
 
-    val v : Arcs.t -> t
-    (** Creates a line string from arc indexes *)
+    val v : Arc_index.t -> t
+    (** Creates a line string from an arc index. *)
   end
 
   module MultiLineString : sig
@@ -181,6 +181,18 @@ module type Geometry = sig
       ([`None]), could be specifically a null value ([`Null]) or an object. *)
 
   and t
+
+  (** {2 Constructors} *)
+
+  val point : Position.t -> geometry
+  val multipoint : Point.t array -> geometry
+  val linestring : Arc_index.t -> geometry
+  val multilinestring : LineString.t array -> geometry
+  val polygon : LineString.t array -> geometry
+  val multipolygon : Polygon.t array -> geometry
+  val collection : t list -> geometry
+
+  (** {2 Conversion functions}*)
 
   val get_point : geometry -> (Point.t, [> `Msg of string ]) result
   val get_point_exn : geometry -> Point.t
@@ -243,6 +255,14 @@ module type S = sig
       foreign_members : (string * json) list;
     }
 
+    val v :
+      ?foreign_members:(string * json) list ->
+      arcs:Geometry.Position.t array array ->
+      (string * Geometry.t) list ->
+      t
+    (** Construct a new topology object getting the arcs and the geometry
+        objects. *)
+
     val to_json : ?bbox:float array -> t -> json
     val of_json : json -> (t, [ `Msg of string ]) result
   end
@@ -252,6 +272,9 @@ module type S = sig
 
   val topojson : t -> topojson
   val bbox : t -> float array option
+
+  val v : ?bbox:float array -> topojson -> t
+  (** Construct a new TopoJSON object, optionally with a bounding-box. *)
 
   val of_json : json -> (t, [ `Msg of string ]) result
   (** [of_json json] converts the JSON to a topojson object (a type {!t}) or an
