@@ -125,4 +125,5 @@ Given the Topojson Object above, we can extract the foreign members by using the
 
 ```ocaml
 # Topojson.Geometry.foreign_members topojson;;
+- : (string * Topojson.json) list = [("foreign", `String "8")]
 ```
