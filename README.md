@@ -124,5 +124,5 @@ val t : Topojson.t = <abstr>
 Given the Topojson Object above, we can extract the foreign members by using the foreign_member function in the Topojson.Geometry module.
 
 ```ocaml
-let foreign_member_usage = Topojson.Geometry.foreign_members topojson
+# Topojson.Geometry.foreign_members topojson;;
 ```
