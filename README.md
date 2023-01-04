@@ -118,3 +118,12 @@ val t : Topojson.t = <abstr>
 - : string =
 "{\"type\":\"Topology\",\"objects\":{\"example\":{\"type\":\"LineString\",\"arcs\":[0],\"foreign\":\"8\"}},\"arcs\":[[[0,0]]]}"
 ```
+
+#### Example usage of foreign_members
+
+Given the Topojson Object above, we can extract the foreign members by using the foreign_member function in the Topojson.Geometry module.
+
+```ocaml
+# Topojson.Geometry.foreign_members topojson;;
+- : (string * Topojson.json) list = [("foreign", `String "8")]
+```
