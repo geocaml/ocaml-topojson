@@ -123,11 +123,15 @@ let foreign_members = Alcotest.testable pp_foreign_member Stdlib.( = )
 type t = { transform : transform option }
 and transform = { scale : float * float; translate : float * float }
 
-let pp_transform ppf = Fmt.pf ppf "%a" transform
 let expected_transform = { scale = (0.0005, 0.0001); translate = (100.0, 0.0) }
 
-let pp_expected_transform ppf (v : Topojson.Topology.transform option) =
-  Fmt.pf ppf "%a" Fmt.(pp_transform) v
+let pp_transform ppf t =
+  Fmt.pf ppf "%s"
+    (Ezjsonm.value_to_string
+       (Topojson.Topology.transform_to_json (Topojson.Topology.get_transform t)))
+
+let pp_expected_transform ppf (v : Topojson.Topology.t) =
+  Fmt.pf ppf "%a" pp_transform (Topojson.Topology.get_transform v)
 
 let transform_ = Alcotest.testable pp_expected_transform Stdlib.( = )
 

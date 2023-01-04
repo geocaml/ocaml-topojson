@@ -463,9 +463,12 @@ module Make (J : Intf.Json) = struct
     }
 
     and transform = { scale : float * float; translate : float * float }
-    
-    let v ?(foreign_members = []) ~arcs objects =
-      { foreign_members; arcs; objects }
+
+    let v ?(foreign_members = []) ~arcs ?transform objects =
+      { foreign_members; arcs; objects; transform }
+
+    let get_transform transform ?(foreign_members = []) ~arcs objects =
+      { transform; foreign_members; arcs; objects }
 
     let keys_in_use =
       [

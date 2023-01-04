@@ -257,7 +257,7 @@ module type S = sig
     }
 
     and transform = { scale : float * float; translate : float * float }
-    
+
     val v :
       ?foreign_members:(string * json) list ->
       arcs:Geometry.Position.t array array ->
@@ -265,6 +265,12 @@ module type S = sig
       t
     (** Construct a new topology object getting the arcs and the geometry
         objects. *)
+
+    val get_transform : t -> transform
+    (** Get the transform object of a Topology object. *)
+
+    val transform_to_json : transform -> json
+    (** Converts transform to json. *)
 
     val to_json : ?bbox:float array -> t -> json
     val of_json : json -> (t, [ `Msg of string ]) result
