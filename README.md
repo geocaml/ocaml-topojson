@@ -1,54 +1,30 @@
-ocaml-topojson
---------------
+# ocaml-topojson
 
 A collection of libraries in pure OCaml for _parsing, constructing, and manipulating_ TopoJSON objects.
 
-## Contents
-
-* [Introduction](#introduction)
-  * [TopoJSON Vs GeoJSON](#topojson-vs-geojson)
-* [Motivation](#motivation)
-* [Current Status](#current-status)
-  * [Feature Status](#feature-status)
-* [Structure of the Code](#structure-of-the-code)
-* [Examples](#examples)
-
+- [Introduction](#introduction)
+- [GeoJSON](#geojson)
+- [Examples](#examples)
+    - [Reading TopoJSON](#reading-topojson)
+        - [Constructing a TopoJSON Value](#constructing-a-topojson-value)
+    - [Read a string](#read-a-string)
+    - [Accessing members](#accessing-members)
 
 ## Introduction
-TopoJSON is an enhanced format for encoding GeoJSON geospatial data. In addition to the GeoJSON geometry types, viz. "Point", "LineString", "Polygon", "MultiPoint", "MultiLineString", "MultiPolygon", and "GeometryCollection", TopoJSON instigates a new type "Topology", which comprises of GeoJSON objects. A _topology_ has a field `objects` mapped with one or more geometry objects by its name type.
 
-### TopoJSON Vs GeoJSON
-TopoJSON has an `arcs` member which consists of the `coordinates` of the geometry types (except "Point" and "MultiPoint"). The value of the _"arcs"_ member is an array of arrays of positions. This is a primary advantage over GeoJSON objects where each individual geometries have their own separately defined coordinates.
-See [TopoJSON Format Specification](https://github.com/topojson/topojson-specification) to know more.
+TopoJSON encodes geospatial data using topological information to improve how this data is encoded. In many ways
+it is similar to GeoJSON, using similar primitives like a `Point` or a `Multipolygon`. However, the primary way
+to use TopoJSON is with a shared Topology. This is an object that also contains *arcs*. An arcs field contains
+an array of an array of positions essentially a collection of linestrings. Other geometries can then *index* into
+this database of segments to build themselves up. This can help reduce the size of the data significantly as often
+geometries share segments (e.g. country borders).
 
+For a full coverage of TopoJSON [be sure to read the specification](https://github.com/topojson/topojson-specification).
 
-## Motivation
-TopoJSON helps to reduce the size of the geospatial data file in a way by eradicating the redundancy and eliminating the duplicate topology that is being shared by one or more geometries. For example, a common boundary that is being shared between two states/countries can be represented only once and can be referenced multiple times.
-To know more about [TopoJSON](https://github.com/topojson/topojson) and its related advantages.
+## GeoJSON
 
-## Current status
-
-### Feature Status
-1. This library is capable of parsing a TopoJSON file as a whole.
-
-2. It supports both the TopoJSON objects - **Topology** and **Geometry**
-
-3. It underpins all the mandatory members of the *Topology* object - **types** and **arcs**.
-
-4. Other than the requisite fields to be supported by all the  *Geometry Objects* i.e., the ***type*** and the ***coordinates/ arcs*** fields, it also supports the following members:
-  - Properties : A geometry object can also additionally have a member with the name “properties”. The value of the properties field is an object (any JSON object or a JSON null value).
-
-5. Additional members/ fields that are upholded by both the modules:
-  - Bounding Box : To consist of information on the coordinate range for a  TopoJSON object may also have a member named “bbox”.
-
-  - Foreign Members : Members or field that are no longer defined in the specification but are used in the TopoJSON document. Semantics do not apply to these *foreign members* and their descendants, irrespective of their names and values.
-
-
-6. *Tranformation and Quantization* are yet to be implemented.
-
-## Structure of the Code
-1. **`src`** : This directory consists of all the related implementations to parse TopoJSON objects including all the interfaces with types and signatures being required by the objects.
-2. **`test`** : Provides the test cases in the form of ```X.json``` file as well as modules to test them.
+This library follows many of the same principles as [ocaml-geojson](https://github.com/geocaml/ocaml-geojson). It might be
+useful to have a read of that README to understand the structure of the code.
 
 ## Examples
 
@@ -56,20 +32,54 @@ The first thing to do is initialise the `Topojson` module with a JSON parsing im
 
 ```ocaml
 module Topojson = Topojson.Make (Ezjsonm_parser);;
+open Topojson
 ```
 
-### Reading
-A small example how this library is efficient in reading a `json` file _(more particulary a `TopoJSON` file)_. This illustration depicts a *TopoJSON* `object` with type `"Topology"` which itself consists of a *Geomtery object* `"Polygon"`.
+We don't restrict ourself to a single JSON parser implementation as it allows us to use the best one depending on where the code is run (e.g. the browser's built-in parser).
+
+### Reading TopoJSON 
+
+We can describe a TopoJSON object using the Ezjsonm primitives.
 
 ```ocaml
-# Topojson.of_json ( `O [
-  ("type", `String "Topology");
-  ("objects" , `O [  ("Instance" , `O [("type", `String "Polygon"); ("arcs", `A [ `A [`Float 0.]]) ]) ])  ;
-  ("arcs", `A [ `A [ `A [`Float 100.;`Float 0.]; `A [`Float 101.; `Float 0.]; `A [`Float 101.; `Float 1.]; `A [`Float 100.; `Float 1.]; `A [`Float 100.; `Float 0.]]] );
-  ]);;
-- : (Topojson.t, [ `Msg of string ]) result = Ok <abstr>
+let topojson : Ezjsonm.value =
+  `O [
+    ("type", `String "Topology");
+    ("objects" , `O [  ("Instance" , `O [("type", `String "Polygon"); ("arcs", `A [ `A [`Float 0.]]) ]) ])  ;
+    ("arcs", `A [ `A [ `A [`Float 100.;`Float 0.]; `A [`Float 101.; `Float 0.]; `A [`Float 101.; `Float 1.]; `A [`Float 100.; `Float 1.]; `A [`Float 100.; `Float 0.]]] );
+  ]
 ```
-#### Working with strings
+
+This is quite verbose but you can see how it is structured. First, we declare that the kind of TopoJSON object we are
+building is a `"Topology"` so we must provide a `"objects"` field and an `"arcs"` field. From this Ezjsonm value we can
+read it into a `Topojson.t`.
+
+```ocaml
+# let t1 = Topojson.of_json topojson |> Result.get_ok;;
+val t1 : t = <abstr>
+```
+
+#### Constructing a TopoJSON Value
+
+We could just as easily build the same TopoJSON value using the constructors provided by the library.
+
+```ocaml
+# let arcs = [| [| Geometry.Position.v ~lng:100. ~lat:0. (); Geometry.Position.v ~lng:101. ~lat:0. (); Geometry.Position.v ~lng:101. ~lat:1. (); Geometry.Position.v ~lng:100. ~lat:1. (); Geometry.Position.v ~lng:100. ~lat:0. () |] |];;
+val arcs : Geometry.Position.t array array =
+  [|[|<abstr>; <abstr>; <abstr>; <abstr>; <abstr>|]|]
+# let instance = Geometry.(polygon [| LineString.v (Arc_index.v [ 0 ]) |]);;
+val instance : Geometry.geometry = Topojson.Geometry.Polygon <abstr>
+# let topology = Topology.v ~arcs [ "Instance", Geometry.v instance ];;
+val topology : Topology.t = <abstr>
+# let t2 = Topojson.(v (Topology topology));;
+val t2 : t = <abstr>
+# t1 = t2;;
+- : bool = true
+```
+
+### Read a string
+
+Consider the following TopoJSON object as a string.
 
 ```ocaml
 # let topojson_string =  {|{
@@ -86,44 +96,32 @@ A small example how this library is efficient in reading a `json` file _(more pa
             ]
      }},
     "transform": {"scale": [0.0005, 0.0001], "translate": [100.0, 0.0]},
-    "type": "Topology"}|};;
+    "type": "Topology",
+    "extra": [ "Wow!" ]}|};;
 val topojson_string : string =
-  "{\n    \"arcs\": [[[0.0, 0.0], [0.0, 9999.0], [2000.0, 0.0], [0.0, -9999.0], [-2000.0, 0.0]]],\n    \"objects\": {\"example \": {\n            \"type\": \"GeometryCollection\",\n            \"geometries\": [\n                {\"coordinates\": [4000.0, 5000.0],\n                 \"properties\": {\"prop0\": \"value0\"},\n     "... (* string length 595; truncated *)
+  "{\n    \"arcs\": [[[0.0, 0.0], [0.0, 9999.0], [2000.0, 0.0], [0.0, -9999.0], [-2000.0, 0.0]]],\n    \"objects\": {\"example \": {\n            \"type\": \"GeometryCollection\",\n            \"geometries\": [\n                {\"coordinates\": [4000.0, 5000.0],\n                 \"properties\": {\"prop0\": \"value0\"},\n     "... (* string length 620; truncated *)
 ```
 
-You can then make use of the TopoJSON function `Topojson.of_json` that takes in the JSON string as an input and converts it to an OCaml value representing a TopoJSON object or an error.
+You can make use of the TopoJSON function `Topojson.of_json` after converting the string to your JSON parser's
+format.
 
-It is also possible to build TopoJSON values and convert them to a string.
 
 ```ocaml
-# let topojson =
-      Topojson.Geometry.(v
-      ~foreign_members:["foreign", `String "8"]
-      (LineString (LineString.v (Arc_index.v [| 0 |]))));;
-val topojson : Topojson.Geometry.t = <abstr>
+# let topojson = 
+  Result.get_ok @@
+  Topojson.of_json @@ 
+  Ezjsonm.value_from_string topojson_string;;
+val topojson : t = <abstr>
 ```
 
-We can then add this linestring into a topology object.
+### Accessing members
+
+Given the TopoJSON object above, we can extract the foreign members by using the `foreign_member` function.
+But first we must confirm that it is a topology.
 
 ```ocaml
-# let arcs = Topojson.Geometry.[| [| Position.v ~lat:0. ~lng:0. () |] |];;
-val arcs : Topojson.Geometry.Position.t array array = [|[|<abstr>|]|]
-# let topology = Topojson.Topology.v ~arcs [ "example", topojson ];;
-val topology : Topojson.Topology.t =
-  {Topojson.Topology.objects = [("example", <abstr>)];
-   arcs = [|[|<abstr>|]|]; foreign_members = []}
-# let t = Topojson.v (Topology topology);;
-val t : Topojson.t = <abstr>
-# Topojson.to_json t |> Ezjsonm.value_to_string;;
-- : string =
-"{\"type\":\"Topology\",\"objects\":{\"example\":{\"type\":\"LineString\",\"arcs\":[0],\"foreign\":\"8\"}},\"arcs\":[[[0,0]]]}"
-```
-
-#### Example usage of foreign_members
-
-Given the Topojson Object above, we can extract the foreign members by using the foreign_member function in the Topojson.Geometry module.
-
-```ocaml
-# Topojson.Geometry.foreign_members topojson;;
-- : (string * Topojson.json) list = [("foreign", `String "8")]
+# match Topojson.topojson topojson with
+  | Geometry _ -> failwith "Expected a topology!"
+  | Topology t -> Topology.foreign_members t;;
+- : (string * json) list = [("extra", `A [`String "Wow!"])]
 ```
