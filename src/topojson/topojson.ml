@@ -134,7 +134,7 @@ module Make (J : Intf.Json) = struct
     module Arc_index = struct
       type t = int array
 
-      let v t = t
+      let v t = Array.of_list t
       let to_json arr = J.array J.int arr
     end
 
@@ -460,6 +460,10 @@ module Make (J : Intf.Json) = struct
       arcs : Geometry.Position.t array array;
       foreign_members : (string * json) list;
     }
+
+    let objects t = t.objects
+    let arcs t = t.arcs
+    let foreign_members t = t.foreign_members
 
     let v ?(foreign_members = []) ~arcs objects =
       { foreign_members; arcs; objects }
