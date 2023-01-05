@@ -111,7 +111,7 @@ val arcs : Topojson.Geometry.Position.t array array = [|[|<abstr>|]|]
 # let topology = Topojson.Topology.v ~arcs [ "example", topojson ];;
 val topology : Topojson.Topology.t =
   {Topojson.Topology.objects = [("example", <abstr>)];
-   arcs = [|[|<abstr>|]|]; foreign_members = []}
+   arcs = [|[|<abstr>|]|]; foreign_members = []; transform = None}
 # let t = Topojson.v (Topology topology);;
 val t : Topojson.t = <abstr>
 # Topojson.to_json t |> Ezjsonm.value_to_string;;

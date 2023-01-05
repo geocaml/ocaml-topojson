@@ -260,13 +260,14 @@ module type S = sig
 
     val v :
       ?foreign_members:(string * json) list ->
+      ?transform:transform ->
       arcs:Geometry.Position.t array array ->
       (string * Geometry.t) list ->
       t
     (** Construct a new topology object getting the arcs and the geometry
         objects. *)
 
-    val get_transform : t -> transform
+    val transform : t -> transform option
     (** Get the transform object of a Topology object. *)
 
     val transform_to_json : transform -> json

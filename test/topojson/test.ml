@@ -120,20 +120,11 @@ let pp_foreign_member ppf (v : (string * Ezjsonm.value) list) =
 let expected_foreign_members = [ ("arcs", `A [ `Float 0.1 ]) ]
 let foreign_members = Alcotest.testable pp_foreign_member Stdlib.( = )
 
-type t = { transform : transform option }
-and transform = { scale : float * float; translate : float * float }
-
-let expected_transform = { scale = (0.0005, 0.0001); translate = (100.0, 0.0) }
-
 let pp_transform ppf t =
   Fmt.pf ppf "%s"
-    (Ezjsonm.value_to_string
-       (Topojson.Topology.transform_to_json (Topojson.Topology.get_transform t)))
+    (Ezjsonm.value_to_string (Topojson.Topology.transform_to_json t))
 
-let pp_expected_transform ppf (v : Topojson.Topology.t) =
-  Fmt.pf ppf "%a" pp_transform (Topojson.Topology.get_transform v)
-
-let transform_ = Alcotest.testable pp_expected_transform Stdlib.( = )
+let transform = Alcotest.testable pp_transform Stdlib.( = )
 
 let geometries () =
   let open Topojson in
@@ -179,8 +170,11 @@ let main () =
       Alcotest.(check foreign_members)
         "same foreign_members" expected_foreign_members
         (get_foreign_members_in_point f);
-      Alcotest.(check transform_)
-        "same transform" expected_transform f.transform;
+      let expected_transform =
+        Topojson.Topology.{ scale = (0.0005, 0.0001); translate = (100.0, 0.0) }
+      in
+      Alcotest.(check (option transform))
+        "same transform" (Some expected_transform) f.transform;
       let output_json = Topojson.to_json t in
       Alcotest.(check ezjsonm) "same ezjsonm" json output_json;
       Alcotest.(check (result topojson msg))
