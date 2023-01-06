@@ -120,6 +120,12 @@ let pp_foreign_member ppf (v : (string * Ezjsonm.value) list) =
 let expected_foreign_members = [ ("arcs", `A [ `Float 0.1 ]) ]
 let foreign_members = Alcotest.testable pp_foreign_member Stdlib.( = )
 
+let pp_transform ppf t =
+  Fmt.pf ppf "%s"
+    (Ezjsonm.value_to_string (Topojson.Topology.transform_to_json t))
+
+let transform = Alcotest.testable pp_transform Stdlib.( = )
+
 let geometries () =
   let open Topojson in
   let s = read_file "./test_cases/files/exemplar.json" in
@@ -165,7 +171,12 @@ let main () =
       Alcotest.(check foreign_members)
         "same foreign_members" expected_foreign_members
         (get_foreign_members_in_point f);
-
+      let expected_transform =
+        Topojson.Topology.{ scale = (0.0005, 0.0001); translate = (100.0, 0.0) }
+      in
+      Alcotest.(check (option transform))
+        "same transform" (Some expected_transform)
+        (Topojson.Topology.transform f);
       let output_json = Topojson.to_json t in
       Alcotest.(check ezjsonm) "same ezjsonm" json output_json;
       Alcotest.(check (result topojson msg))

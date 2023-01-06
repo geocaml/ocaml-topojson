@@ -252,6 +252,9 @@ module type S = sig
     type t
     (** A topology object *)
 
+    type transform = { scale : float * float; translate : float * float }
+    (** A transform object *)
+
     val objects : t -> (string * Geometry.t) list
     (** The underlying objects of the topology object. *)
 
@@ -261,13 +264,20 @@ module type S = sig
     val foreign_members : t -> (string * json) list
     (** The extra fields that were in the topology object. *)
 
+    val transform : t -> transform option
+    (** Get the transform object of a Topology object. *)
+
     val v :
       ?foreign_members:(string * json) list ->
+      ?transform:transform ->
       arcs:Geometry.Position.t array array ->
       (string * Geometry.t) list ->
       t
     (** Construct a new topology object getting the arcs and the geometry
         objects. *)
+
+    val transform_to_json : transform -> json
+    (** Converts transform to json. *)
 
     val to_json : ?bbox:float array -> t -> json
     val of_json : json -> (t, [ `Msg of string ]) result
