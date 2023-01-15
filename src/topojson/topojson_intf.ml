@@ -105,7 +105,7 @@ module type Geometry = sig
     type t
     (** An array of indexes into the arcs field. *)
 
-    val v : int array -> t
+    val v : int list -> t
     (** A constructors for building an arc-index from an integer array. *)
   end
 
@@ -249,19 +249,35 @@ module type S = sig
   module Geometry : Geometry with type json = json
 
   module Topology : sig
-    type t = {
-      objects : (string * Geometry.t) list;
-      arcs : Geometry.Position.t array array;
-      foreign_members : (string * json) list;
-    }
+    type t
+    (** A topology object *)
+
+    type transform = { scale : float * float; translate : float * float }
+    (** A transform object *)
+
+    val objects : t -> (string * Geometry.t) list
+    (** The underlying objects of the topology object. *)
+
+    val arcs : t -> Geometry.Position.t array array
+    (** The database of linestrings used by other geometries. *)
+
+    val foreign_members : t -> (string * json) list
+    (** The extra fields that were in the topology object. *)
+
+    val transform : t -> transform option
+    (** Get the transform object of a Topology object. *)
 
     val v :
       ?foreign_members:(string * json) list ->
+      ?transform:transform ->
       arcs:Geometry.Position.t array array ->
       (string * Geometry.t) list ->
       t
     (** Construct a new topology object getting the arcs and the geometry
         objects. *)
+
+    val transform_to_json : transform -> json
+    (** Converts transform to json. *)
 
     val to_json : ?bbox:float array -> t -> json
     val of_json : json -> (t, [ `Msg of string ]) result

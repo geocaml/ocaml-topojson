@@ -99,7 +99,7 @@ let ezjsonm =
 
 let get_foreign_members_in_point (f : Topojson.Topology.t) =
   let open Topojson in
-  let objs = List.hd f.objects |> snd in
+  let objs = List.hd (Topology.objects f) |> snd in
   match Geometry.geometry objs with
   | Geometry.Collection (point :: _) -> Geometry.foreign_members point
   | _ -> assert false
@@ -120,6 +120,12 @@ let pp_foreign_member ppf (v : (string * Ezjsonm.value) list) =
 let expected_foreign_members = [ ("arcs", `A [ `Float 0.1 ]) ]
 let foreign_members = Alcotest.testable pp_foreign_member Stdlib.( = )
 
+let pp_transform ppf t =
+  Fmt.pf ppf "%s"
+    (Ezjsonm.value_to_string (Topojson.Topology.transform_to_json t))
+
+let transform = Alcotest.testable pp_transform Stdlib.( = )
+
 let geometries () =
   let open Topojson in
   let s = read_file "./test_cases/files/exemplar.json" in
@@ -130,22 +136,22 @@ let geometries () =
     | Topology f -> f
     | _ -> failwith "Expected topology"
   in
-  let objs = List.hd f.objects |> snd in
+  let objs = List.hd (Topology.objects f) |> snd in
   match Geometry.geometry objs with
-  | Collection [ point; _linestring; _polygon ] ->
+  | Collection [ point; linestring; polygon ] ->
       let geo_point = Geometry.geometry point in
       let expected_point =
         Geometry.(point (Position.v ~lng:102. ~lat:0.5 ()))
       in
       Alcotest.(check inner_geometry) "same point" geo_point expected_point;
-      let geo_linestring = Geometry.geometry _linestring in
-      let expected_linestring = Geometry.(linestring @@ Arc_index.v [| 0 |]) in
+      let geo_linestring = Geometry.geometry linestring in
+      let expected_linestring = Geometry.(linestring @@ Arc_index.v [ 0 ]) in
       Alcotest.(check inner_geometry)
         "same point" geo_linestring expected_linestring;
 
-      let geo_polygon = Geometry.geometry _polygon in
+      let geo_polygon = Geometry.geometry polygon in
       let expected_polygon =
-        Geometry.(polygon [| LineString.v @@ Arc_index.v [| -2 |] |])
+        Geometry.(polygon [| LineString.v @@ Arc_index.v [ -2 ] |])
       in
       Alcotest.(check inner_geometry) "same point" geo_polygon expected_polygon
   | _ -> Alcotest.fail "Expected a collection of geometries"
@@ -158,13 +164,19 @@ let main () =
   | Ok t, Ok (Topojson.Topology f) ->
       (* Here we check that the arcs defined in the file are the same as the ones
          we hardcoded above *)
-      Alcotest.(check (array (array position))) "same arcs" f.arcs expected_arcs;
+      Alcotest.(check (array (array position)))
+        "same arcs" (Topojson.Topology.arcs f) expected_arcs;
       (* Then we check that converting the Topojson OCaml value to JSON and then back
          again produces the same Topojson OCaml value. *)
       Alcotest.(check foreign_members)
         "same foreign_members" expected_foreign_members
         (get_foreign_members_in_point f);
-
+      let expected_transform =
+        Topojson.Topology.{ scale = (0.0005, 0.0001); translate = (100.0, 0.0) }
+      in
+      Alcotest.(check (option transform))
+        "same transform" (Some expected_transform)
+        (Topojson.Topology.transform f);
       let output_json = Topojson.to_json t in
       Alcotest.(check ezjsonm) "same ezjsonm" json output_json;
       Alcotest.(check (result topojson msg))
