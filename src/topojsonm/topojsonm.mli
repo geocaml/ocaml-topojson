@@ -33,7 +33,7 @@ module Topo : Topojson.S with type json = Ezjsonm.value
     provide. *)
 
 val map_object :
-  (Topo.Topology.t -> Topo.Topology.t) ->
+  (Topo.t -> Topo.t) ->
   Jsonm.src ->
   Jsonm.dst ->
   (unit, Err.t) result
@@ -44,71 +44,6 @@ val map_object :
 
     The map will recurse into geometry collections. Note for the moment if you
     have a single geometry object as your document, this will not work. *)
-
-val map_props :
-  (Ezjsonm.value -> Ezjsonm.value) ->
-  Jsonm.src ->
-  Jsonm.dst ->
-  (unit, Err.t) result
-(** [map_props src dst ~f] will apply [f] to each feature's properties field.
-    The properties field is decoded into an {!Ezjsonm.value} for convenience. *)
-
-(** {2 Folds}
-
-    Folds are like maps except you can collect items into an accumulator which
-    is returned to you.
-
-    For example, you might want to collect all of the [names] in the
-    [properties] of features.
-
-    {[
-      let get_string_exn = function `String s -> s | _ -> failwith "err"
-
-      let get_name = function
-        | `O assoc -> List.assoc "name" assoc |> get_string_exn
-        | _ -> failwith "err"
-
-      let places src =
-        Topojsonm.fold_props (fun acc p -> get_name p :: acc) [] src
-    ]} *)
-
-val fold_geometry :
-  ('a -> Topo.Geometry.t -> 'a) -> 'a -> Jsonm.src -> ('a, Err.t) result
-(** [fold_geometry f acc src] is much like {!map_geometry} but allows you to
-    accumulate some result that is then returned to you. *)
-
-val fold_props :
-  ('a -> Ezjsonm.value -> 'a) -> 'a -> Jsonm.src -> ('a, Err.t) result
-(** [fold_props f init src] *)
-
-(** {2 Iterators}
-
-    Iterators are similar to map functions except they take a function [f] that
-    takes a single element from the data-structure as an argument and returns
-    [unit]. In that sense, they tend to be functions with side-effects, such as
-    [print_endline].
-
-    For example, we might want to print the JSON value of every geometry object
-    in a TopoJSON object.
-
-    {[
-      let print_geometry g =
-        print_endline
-        @@ Ezjsone.value_to_string (Topojsonm.G.Geometry.to_json g)
-
-      let values src = Topojsonm.iter_geometry print_geometry src
-    ]} *)
-
-val iter_geometry : (Topo.t -> unit) -> Jsonm.src -> (unit, Err.t) result
-(** [iter_geometry f src] will apply [f] to all TopoJson objects. *)
-
-val iter_props : (Ezjsonm.value -> unit) -> Jsonm.src -> (unit, Err.t) result
-(** [iter_props f src] will apply [f] to each feature's properties field. *)
-
-(** {2 Effect-based, non-blocking libraries}
-
-    These libraries use effects to perform non-blocking parsing. They are
-    currently a part of Topojsone and exposed for other libraries to use. *)
 
 module Ezjsonm = Ezjsonm
 module Jsonm = Jsonm

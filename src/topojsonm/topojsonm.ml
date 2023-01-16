@@ -171,16 +171,17 @@ let map_object f src dst =
   in
   let rec go () =
     match Jsonm.decode decoder with
-    | `Lexeme (`Name "object" as t) ->
+    | `Lexeme (`Name "objects" as t) ->
         (match Jsonm.decode decoder with
-        | `Lexeme (`Name "example" as ex) -> (
+        | `Os -> (
+        let b = Jsonm.decode decoder in
             match Topo.of_json @@ decode_single_object decoder with
             | Error (`Msg m) -> raise (Abort (`Unexpected m))
             | Ok v -> (
                 match Topo.topojson v with
                 | Geometry g ->
-                    let g' = f g in
-                    enc (`Lexeme ex);
+                    let g' = f b g in
+                    enc (`Lexeme t);
                     encode_value encoder
                       (Topo.to_json @@ Topo.v ?bbox:(Topo.bbox v) (Geometry g'));
                     go ()
@@ -191,7 +192,6 @@ let map_object f src dst =
         | `Error e -> raise (Abort (`Error (loc (), e)))
         | `End -> ignore @@ Jsonm.encode encoder `End
         | `Await -> assert false);
-        enc (`Lexeme t)
     | `Lexeme _ as t ->
         enc t;
         go ()
@@ -201,27 +201,6 @@ let map_object f src dst =
   in
   try Ok (go ()) with Abort e -> Error e
 
-let map_props f src dst =
-  let decoder = Jsonm.decoder src in
-  let encoder = Jsonm.encoder dst in
-  let loc () = Jsonm.decoded_range decoder in
-  let enc v =
-    match Jsonm.encode encoder v with
-    | `Ok -> ()
-    | `Partial -> raise (Abort (`Unexpected "partial encoding"))
-  in
-  let rec go () =
-    match Jsonm.decode decoder with
-    | `Lexeme (`Name "properties" as t) ->
-        let o = f @@ decode_single_object decoder in
-        enc (`Lexeme t);
-        encode_value encoder o;
-        go ()
-    | `Lexeme _ as t ->
-        enc t;
-        go ()
-    | `Error e -> raise (Abort (`Error (loc (), e)))
-    | `End -> ignore @@ Jsonm.encode encoder `End
-    | `Await -> assert false
-  in
-  try Ok (go ()) with Abort e -> Error e
+  module Ezjsonm = Ezjsonm
+  module Jsonm = Jsonm
+  module Uutf = Uutf
