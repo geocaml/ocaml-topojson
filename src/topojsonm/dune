@@ -1,4 +1,4 @@
 (library
  (name topojsonm)
  (public_name topojsonm)
- (libraries ezjsonm topojson jsonm))
+ (libraries ezjsonm topojson jsonm hex sexplib0))
