@@ -33,11 +33,11 @@ module Topo : Topojson.S with type json = Ezjsonm.value
     provide. *)
 
 val map_object :
-  (Topo.t -> Topo.t) ->
+  (string * Topo.Geometry.t -> string * Topo.Geometry.t) ->
   Jsonm.src ->
   Jsonm.dst ->
   (unit, Err.t) result
-(** [map_geometry f src dst] will apply [f] to all TopoJson objects. This is
+(** [map_object f src dst] will apply [f] to all TopoJson objects. This is
     essentially any
     {{:https://datatracker.ietf.org/doc/html/rfc7946#section-3.1} geometry
     object}.

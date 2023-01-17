@@ -171,27 +171,33 @@ let map_object f src dst =
   in
   let rec go () =
     match Jsonm.decode decoder with
-    | `Lexeme (`Name "objects" as t) ->
-        (match Jsonm.decode decoder with
-        | `Os -> (
-        let b = Jsonm.decode decoder in
-            match Topo.of_json @@ decode_single_object decoder with
-            | Error (`Msg m) -> raise (Abort (`Unexpected m))
-            | Ok v -> (
-                match Topo.topojson v with
-                | Geometry g ->
-                    let g' = f b g in
-                    enc (`Lexeme t);
-                    encode_value encoder
-                      (Topo.to_json @@ Topo.v ?bbox:(Topo.bbox v) (Geometry g'));
-                    go ()
-                | _ -> raise (Invalid_argument "Expected a geometry object")))
+    | `Lexeme (`Name "objects" as t) -> (
+        match Jsonm.decode decoder with
+        | `Lexeme `Os ->
+            let rec loop_through_objects decoder =
+              match Jsonm.decode decoder with
+              | `Lexeme `Oe ->
+                  ignore (enc (`Lexeme `Oe));
+                  ()
+              | `Lexeme (`Name geometry_name) -> (
+                  let geometry_json = decode_single_object decoder in
+                  match Topo.Geometry.of_json geometry_json with
+                  | Error (`Msg m) -> failwith m
+                  | Ok g ->
+                      let new_name, new_geometry = f (geometry_name, g) in
+                      enc (`Lexeme (`Name new_name));
+                      encode_value encoder (Topo.Geometry.to_json new_geometry);
+                      loop_through_objects decoder)
+              | _ -> failwith "Unexpected lexeme"
+            in
+            enc (`Lexeme t);
+            go ()
         | `Lexeme _ as t ->
             enc t;
             go ()
         | `Error e -> raise (Abort (`Error (loc (), e)))
         | `End -> ignore @@ Jsonm.encode encoder `End
-        | `Await -> assert false);
+        | `Await -> assert false)
     | `Lexeme _ as t ->
         enc t;
         go ()
@@ -201,6 +207,6 @@ let map_object f src dst =
   in
   try Ok (go ()) with Abort e -> Error e
 
-  module Ezjsonm = Ezjsonm
-  module Jsonm = Jsonm
-  module Uutf = Uutf
+module Ezjsonm = Ezjsonm
+module Jsonm = Jsonm
+module Uutf = Uutf
