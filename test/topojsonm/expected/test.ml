@@ -1,5 +1,4 @@
 (* Tests to validate implemented functions/ modules  *)
-
 let test_map_objects_topojson () =
   let file = open_in "../../topojson/test_cases/files/exemplar.json" in
   let s = Jsonm.decoder (`Channel file) in

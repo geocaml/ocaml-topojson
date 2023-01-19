@@ -191,6 +191,7 @@ let map_object f src dst =
         enc (`Lexeme t);
         match Jsonm.decode decoder with
         | `Lexeme `Os ->
+            enc (`Lexeme `Os);
             loop_through_objects decoder;
             go ()
         | `Lexeme _ as t ->
