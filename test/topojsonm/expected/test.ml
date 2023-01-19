@@ -15,8 +15,7 @@ let test_map_objects_topojson () =
       with
       | Topo.Geometry.LineString _, f ->
           Topo.Geometry.(
-            v ~foreign_members:f
-              Topo.Geometry.(linestring (Arc_index.v [2] )))
+            v ~foreign_members:f Topo.Geometry.(linestring (Arc_index.v [ 2 ])))
       | _ -> geometry
     in
     (new_name, new_geometry)
@@ -29,7 +28,7 @@ let test_map_objects_topojson () =
       let json_str = Buffer.contents buffer in
       (* Validate that the modified TopoJSON has the expected modification in the name and the geometry*)
       print_string json_str;
-      print_newline();
+      print_newline ();
       print_endline "test_map_objects_topojson passed"
   | Error e ->
       Topojsonm.Err.pp Format.err_formatter e;
