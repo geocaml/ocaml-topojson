@@ -169,28 +169,29 @@ let map_object f src dst =
     | `Ok -> ()
     | `Partial -> raise (Abort (`Unexpected "partial encoding"))
   in
+  let rec loop_through_objects decoder =
+    match Jsonm.decode decoder with
+    | `Lexeme `Oe ->
+        ignore (enc (`Lexeme `Oe));
+        ()
+    | `Lexeme (`Name geometry_name) -> (
+        let geometry_json = decode_single_object decoder in
+        match Topo.Geometry.of_json geometry_json with
+        | Error (`Msg m) -> failwith m
+        | Ok g ->
+            let new_name, new_geometry = f (geometry_name, g) in
+            enc (`Lexeme (`Name new_name));
+            encode_value encoder (Topo.Geometry.to_json new_geometry);
+            loop_through_objects decoder)
+    | _ -> failwith "Unexpected lexeme"
+  in
   let rec go () =
     match Jsonm.decode decoder with
     | `Lexeme (`Name "objects" as t) -> (
+        enc (`Lexeme t);
         match Jsonm.decode decoder with
         | `Lexeme `Os ->
-            let rec loop_through_objects decoder =
-              match Jsonm.decode decoder with
-              | `Lexeme `Oe ->
-                  ignore (enc (`Lexeme `Oe));
-                  ()
-              | `Lexeme (`Name geometry_name) -> (
-                  let geometry_json = decode_single_object decoder in
-                  match Topo.Geometry.of_json geometry_json with
-                  | Error (`Msg m) -> failwith m
-                  | Ok g ->
-                      let new_name, new_geometry = f (geometry_name, g) in
-                      enc (`Lexeme (`Name new_name));
-                      encode_value encoder (Topo.Geometry.to_json new_geometry);
-                      loop_through_objects decoder)
-              | _ -> failwith "Unexpected lexeme"
-            in
-            enc (`Lexeme t);
+            loop_through_objects decoder;
             go ()
         | `Lexeme _ as t ->
             enc t;
