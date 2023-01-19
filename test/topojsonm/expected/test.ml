@@ -15,19 +15,20 @@ let test_map_objects_topojson () =
       | Topo.Geometry.Point _, f ->
           Topo.Geometry.(
             v ~foreign_members:f
-              Topo.Geometry.(point (Position.v ~lng:102. ~lat:0.5 ())))
+              Topo.Geometry.(point (Position.v ~lng:10. ~lat:0.1 ())))
       | _ -> geometry
     in
     (new_name, new_geometry)
   in
   let res = Topojsonm.map_object f src dst in
+
   close_in file;
   match res with
   | Ok () ->
       let buff = Buffer.create 1000 in
       let json_str = Buffer.contents buff in
       (* Validate that the modified TopoJSON has the expected modification in the name and the geometry*)
-      print_endline "test_map_objects_topojson passed";
+      print_endline " test_map_objects_topojson passed";
       print_string json_str
   | Error e ->
       Topojsonm.Err.pp Format.err_formatter e;
