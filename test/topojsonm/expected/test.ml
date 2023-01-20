@@ -13,7 +13,7 @@ let test_map_objects_topojson () =
       match
         (Topo.Geometry.geometry geometry, Topo.Geometry.foreign_members geometry)
       with
-      | Topo.Geometry.LineString _, f ->
+      | Topo.Geometry.Collection _, f ->
           Topo.Geometry.(
             v ~foreign_members:f Topo.Geometry.(linestring (Arc_index.v [ 2 ])))
       | _ -> geometry
