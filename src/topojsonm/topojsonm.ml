@@ -209,6 +209,39 @@ let map_object f src dst =
   in
   try Ok (go ()) with Abort e -> Error e
 
+let fold_object f initial_acc src =
+  let decoder = Jsonm.decoder src in
+  let loc () = Jsonm.decoded_range decoder in
+  let rec loop_through_objects decoder initial_acc =
+    match Jsonm.decode decoder with
+    | `Lexeme `Oe -> initial_acc
+    | `Lexeme (`Name geometry_name) -> (
+        let geometry_json = decode_single_object decoder in
+        match Topo.Geometry.of_json geometry_json with
+        | Error (`Msg m) -> failwith m
+        | Ok v ->
+            let new_acc = f initial_acc (geometry_name, v) in
+            loop_through_objects decoder new_acc)
+    | _ -> failwith "Unexpected lexeme"
+  in
+  let rec go acc =
+    match Jsonm.decode decoder with
+    | `Lexeme (`Name "objects") -> (
+        match Jsonm.decode decoder with
+        | `Lexeme `Os ->
+            let acc = loop_through_objects decoder acc in
+            go acc
+        | `Lexeme _ -> go acc
+        | `Error e -> raise (Abort (`Error (loc (), e)))
+        | `End -> acc
+        | `Await -> assert false)
+    | `Lexeme _ -> go acc
+    | `Error e -> raise (Abort (`Error (loc (), e)))
+    | `End -> acc
+    | `Await -> assert false
+  in
+  try Ok (go initial_acc) with Abort e -> Error e
+
 module Ezjsonm = Ezjsonm
 module Jsonm = Jsonm
 module Uutf = Uutf
