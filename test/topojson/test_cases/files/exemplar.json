@@ -8,6 +8,7 @@
       "geometries": [
         {
           "type": "Point",
+		  "id": 2345,
           "properties": {
             "prop0": "value0"
           },
