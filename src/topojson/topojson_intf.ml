@@ -233,12 +233,13 @@ module type Geometry = sig
     ?id:json ->
     ?properties:properties ->
     ?foreign_members:(string * json) list ->
+    ?bbox:float array ->
     geometry ->
     t
 
   (** Creates a new Geometry object. *)
 
-  val to_json : ?bbox:float array -> t -> json
+  val to_json : t -> json
   val of_json : json -> (t, [ `Msg of string ]) result
 end
 

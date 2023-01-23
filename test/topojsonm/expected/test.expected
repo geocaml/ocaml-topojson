@@ -1,2 +1,2 @@
-{"type":"Topology","transform":{"scale":[0.0005,0.0001],"translate":[100,0]},"objects":{"new_example":{"type":"LineString","arcs":[2]}},"arcs":[[[102,0],[103,1],[104,0],[105,1]],[[100,0],[101,0],[101,1],[100,1],[100,0]]]}
+{"type":"Topology","transform":{"scale":[0.0005,0.0001],"translate":[100,0]},"bbox":[1,2,3,4],"objects":{"new_example":{"type":"LineString","arcs":[2]}},"arcs":[[[102,0],[103,1],[104,0],[105,1]],[[100,0],[101,0],[101,1],[100,1],[100,0]]]}
 test_map_objects_topojson passed
