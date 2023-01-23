@@ -43,9 +43,9 @@ val map_object :
 
 val fold_object :
   ('acc -> string * Topo.Geometry.t -> 'acc) ->
-  'a ->
+  'acc ->
   [< Jsonm.src ] ->
-  ('a, Err.t) result
+  ('acc, Err.t) result
 (** [fold_object f initial_acc src] is much like {!map_object} but allows you to
     accumulate some result that is then returned to you. *)
 

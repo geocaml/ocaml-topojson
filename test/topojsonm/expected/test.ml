@@ -1,12 +1,11 @@
 (* Tests to validate implemented functions/ modules  *)
-let file = open_in "../../topojson/test_cases/files/exemplar.json"
-let s = Jsonm.decoder (`Channel file)
-let src = Jsonm.decoder_src s
-let buffer = Buffer.create 1024
-let d = Jsonm.encoder (`Buffer buffer)
-let dst = Jsonm.encoder_dst d
-
 let test_map_objects_topojson () =
+  let file = open_in "../../topojson/test_cases/files/exemplar.json" in
+  let s = Jsonm.decoder (`Channel file) in
+  let src = Jsonm.decoder_src s in
+  let buffer = Buffer.create 1024 in
+  let d = Jsonm.encoder (`Buffer buffer) in
+  let dst = Jsonm.encoder_dst d in
   let f (name, geometry) =
     let new_name = "new_" ^ name in
     let open Topojsonm in
@@ -35,6 +34,9 @@ let test_map_objects_topojson () =
       failwith "Internal err"
 
 let test_fold_object () =
+  let file = open_in "../../topojson/test_cases/files/exemplar.json" in
+  let s = Jsonm.decoder (`Channel file) in
+  let src = Jsonm.decoder_src s in
   let initial_acc = 0 in
   let open Topojsonm in
   let f acc (_, _geometry) = acc + 1 in
