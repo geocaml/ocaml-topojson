@@ -258,13 +258,14 @@ module Make (J : Intf.Json) = struct
 
     and t = {
       geometry : geometry;
+      bbox : float array option;
       properties : properties;
       foreign_members : (string * json) list;
       id : json option;
     }
 
-    let v ?id ?(properties = `None) ?(foreign_members = []) geo =
-      { geometry = geo; properties; foreign_members; id }
+    let v ?id ?(properties = `None) ?(foreign_members = []) ?bbox geo =
+      { geometry = geo; properties; bbox; foreign_members; id }
 
     let geometry t = t.geometry
     let properties t = t.properties
@@ -339,6 +340,10 @@ module Make (J : Intf.Json) = struct
       let fm = foreign_members_of_json json in
       let properties = properties_of_json json in
       let id = id_of_json json in
+      let bbox =
+        J.find json [ "bbox" ]
+        |> Option.map J.(decode_or_err @@ to_array (decode_or_err J.to_float))
+      in
       match J.find json [ "type" ] with
       | Some typ -> (
           match J.to_string typ with
@@ -346,6 +351,7 @@ module Make (J : Intf.Json) = struct
               Result.map (fun g ->
                   {
                     geometry = Point g;
+                    bbox;
                     properties;
                     foreign_members = fm keys_in_use_for_point;
                     id;
@@ -355,6 +361,7 @@ module Make (J : Intf.Json) = struct
               Result.map (fun g ->
                   {
                     geometry = MultiPoint g;
+                    bbox;
                     properties;
                     foreign_members = fm keys_in_use_for_point;
                     id;
@@ -364,6 +371,7 @@ module Make (J : Intf.Json) = struct
               Result.map (fun g ->
                   {
                     geometry = LineString g;
+                    bbox;
                     properties;
                     foreign_members = fm keys_in_use;
                     id;
@@ -373,6 +381,7 @@ module Make (J : Intf.Json) = struct
               Result.map (fun g ->
                   {
                     geometry = MultiLineString g;
+                    bbox;
                     properties;
                     foreign_members = fm keys_in_use;
                     id;
@@ -382,6 +391,7 @@ module Make (J : Intf.Json) = struct
               Result.map (fun g ->
                   {
                     geometry = Polygon g;
+                    bbox;
                     properties;
                     foreign_members = fm keys_in_use;
                     id;
@@ -391,6 +401,7 @@ module Make (J : Intf.Json) = struct
               Result.map (fun g ->
                   {
                     geometry = MultiPolygon g;
+                    bbox;
                     properties;
                     foreign_members = fm keys_in_use;
                     id;
@@ -404,6 +415,7 @@ module Make (J : Intf.Json) = struct
                     (fun g ->
                       {
                         geometry = Collection g;
+                        bbox;
                         properties;
                         foreign_members = fm keys_in_use;
                         id;
@@ -421,7 +433,8 @@ module Make (J : Intf.Json) = struct
             (`Msg
               "A TopoJSON text should contain one object with a member `type`.")
 
-    let rec to_json ?bbox t =
+    let rec to_json t =
+      let bbox = t.bbox in
       match t.geometry with
       | Point point ->
           Point.to_json ?bbox ~foreign_members:t.foreign_members
@@ -586,7 +599,10 @@ module Make (J : Intf.Json) = struct
 
   let to_json = function
     | { topojson = Topology f; bbox } -> Topology.to_json ?bbox f
-    | { topojson = Geometry g; bbox } -> Geometry.to_json ?bbox g
+    | { topojson = Geometry g; bbox = _ } ->
+        (* The geometry value [g] will have the bbox already, so we don't need to
+           do anything with it here. *)
+        Geometry.to_json g
 
   let v ?bbox topojson = { bbox; topojson }
 end

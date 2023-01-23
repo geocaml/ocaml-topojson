@@ -1,6 +1,7 @@
 {
   "type": "Topology",
   "transform": {"scale": [0.0005, 0.0001], "translate": [100.0, 0.0]},
+  "bbox": [1, 2, 3, 4],
   "objects": {
     "example": {
       "type": "GeometryCollection",
@@ -15,6 +16,7 @@
         },
         {
           "type": "LineString",
+		  "bbox": [1, 2, 3, 4],
           "properties": {
             "prop0": "value0",
             "prop1": 0
