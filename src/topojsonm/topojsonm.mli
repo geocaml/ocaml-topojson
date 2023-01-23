@@ -42,7 +42,7 @@ val map_object :
     geometry object as your document, this will not work. *)
 
 val fold_object :
-  ('a -> string * Topo.Geometry.t -> 'a) ->
+  ('acc -> string * Topo.Geometry.t -> 'acc) ->
   'a ->
   [< Jsonm.src ] ->
   ('a, Err.t) result
