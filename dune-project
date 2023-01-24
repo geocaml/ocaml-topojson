@@ -31,6 +31,7 @@
  (description "A library for manipulating Topojson as a stream, useful because Topojson can be gigabytes in size.")
  (depends
    (topojson (= :version))
-   geojsone))
+   geojsone
+   (eio_main :with-test)))
 
 (using mdx 0.2)
