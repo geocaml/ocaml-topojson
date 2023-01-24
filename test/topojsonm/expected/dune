@@ -2,4 +2,4 @@
  (name test)
  (deps
   (source_tree input))
- (libraries jsonm topojsonm))
+ (libraries eio_main jsonm topojsone))

@@ -9,7 +9,7 @@ license: "MIT"
 homepage: "https://github.com/patricoferris/ocaml-topojson"
 bug-reports: "https://github.com/patricoferris/ocaml-topojson/issues"
 depends: [
-  "dune" {>= "2.9"}
+  "dune" {>= "3.0"}
   "brr" {with-test}
   "bos" {with-test}
   "bechamel-notty" {>= "0.1.0" & with-test}
@@ -27,11 +27,9 @@ build: [
     name
     "-j"
     jobs
-    "--promote-install-files=false"
     "@install"
     "@runtest" {with-test}
     "@doc" {with-doc}
   ]
-  ["dune" "install" "-p" name "--create-install-files" name]
 ]
 dev-repo: "git+https://github.com/patricoferris/ocaml-topojson.git"

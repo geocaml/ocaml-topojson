@@ -1,4 +1,4 @@
-(lang dune 2.9)
+(lang dune 3.0)
 
 (name topojson)
 
@@ -26,12 +26,11 @@
    (ezjsonm  :with-test)))
 
 (package
- (name topojsonm)
- (synopsis "Streaming topojson library using jsonm")
+ (name topojsone)
+ (synopsis "Streaming topojson library")
  (description "A library for manipulating Topojson as a stream, useful because Topojson can be gigabytes in size.")
- (depends 
+ (depends
    (topojson (= :version))
-   jsonm 
-   ezjsonm))
+   geojsone))
 
-(using mdx 0.1)
+(using mdx 0.2)

@@ -1,14 +1,26 @@
+open Eio
+
+let src_of_flow flow =
+  let buff = Cstruct.create 2048 in
+  fun () ->
+    let got = Eio.Flow.(single_read flow buff) in
+    let t = Cstruct.sub buff 0 got in
+    t
+
+let with_src cwd f func =
+  Eio.Path.(with_open_in (cwd / f)) @@ fun ic -> func @@ src_of_flow ic
+
+let buffer_to_dst buf bs =
+  Eio.Flow.(copy (cstruct_source [ bs ]) (Eio.Flow.buffer_sink buf))
+
 (* Tests to validate implemented functions/ modules  *)
-let test_map_objects_topojson () =
-  let file = open_in "../../topojson/test_cases/files/exemplar.json" in
-  let s = Jsonm.decoder (`Channel file) in
-  let src = Jsonm.decoder_src s in
+let test_map_objects_topojson ~fs () =
+  with_src fs "../../topojson/test_cases/files/exemplar.json" @@ fun src ->
   let buffer = Buffer.create 1024 in
-  let d = Jsonm.encoder (`Buffer buffer) in
-  let dst = Jsonm.encoder_dst d in
+  let dst = buffer_to_dst buffer in
   let f (name, geometry) =
     let new_name = "new_" ^ name in
-    let open Topojsonm in
+    let open Topojsone in
     let new_geometry =
       match
         (Topo.Geometry.geometry geometry, Topo.Geometry.foreign_members geometry)
@@ -20,37 +32,32 @@ let test_map_objects_topojson () =
     in
     (new_name, new_geometry)
   in
-  let res = Topojsonm.map_object f src dst in
+  let res = Topojsone.map_object f src dst in
 
   match res with
   | Ok () ->
       let json_str = Buffer.contents buffer in
       (* Validate that the modified TopoJSON has the expected modification in the name and the geometry*)
-      print_string json_str;
-      print_newline ();
-      print_endline "test_map_objects_topojson passed"
+      print_endline json_str
   | Error e ->
-      Topojsonm.Err.pp Format.err_formatter e;
+      Topojsone.Err.pp Format.err_formatter e;
       failwith "Internal err"
 
-let test_fold_object () =
-  let file = open_in "../../topojson/test_cases/files/exemplar.json" in
-  let s = Jsonm.decoder (`Channel file) in
-  let src = Jsonm.decoder_src s in
+let test_fold_object ~fs () =
+  with_src fs "../../topojson/test_cases/files/exemplar.json" @@ fun src ->
   let initial_acc = 0 in
-  let open Topojsonm in
+  let open Topojsone in
   let f acc (_, _geometry) = acc + 1 in
   match fold_object f initial_acc src with
   | Ok final_acc ->
-      print_string "Total acc: ";
-      print_int final_acc;
-      print_newline ();
-      if final_acc > 0 then print_endline "fold_object test passed"
-      else failwith "fold_object test failed"
+      print_endline ("Total acc: " ^ string_of_int final_acc);
+      if final_acc > 0 then () else failwith "fold_object test failed"
   | Error e ->
-      Topojsonm.Err.pp Format.err_formatter e;
+      Topojsone.Err.pp Format.err_formatter e;
       failwith "Internal err"
 
 let () =
-test_map_objects_topojson ();
-test_fold_object ()
+  Eio_main.run @@ fun env ->
+  let fs = Stdenv.fs env in
+  test_map_objects_topojson ~fs ();
+  test_fold_object ~fs ()
