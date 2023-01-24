@@ -14,21 +14,22 @@
    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
    DEALINGS IN THE SOFTWARE.
 
-   The defunctionalised value construction is borrowed from Ezjsonm.
+   The defunctionalised value construction is borrowed from Ezjsone.
 *)
 
 (* A TopoJson document consists of a single JSON document that is either a feature collection
    (an array of features), a single feature (an array of geometry objects) or a single geometry
    objects (which could contain multiple geometry objects thanks to the collection type).
 *)
+open Geojsone
 
 module Err = struct
   type location = (int * int) * (int * int)
-  type t = [ `Error of location * Jsonm.error | `EOI | `Unexpected of string ]
+  type t = [ `Error of location * Jsone.error | `EOI | `Unexpected of string ]
 
   let pp ppf = function
     | `Error (((l1, l2), (l3, l4)), e) ->
-        Format.fprintf ppf "Error %a (%i:%i - %i:%i)" Jsonm.pp_error e l1 l2 l3
+        Format.fprintf ppf "Error %a (%i:%i - %i:%i)" Jsone.pp_error e l1 l2 l3
           l4
     | `EOI -> Format.fprintf ppf "Unexpected end of input"
     | `Unexpected s -> Format.fprintf ppf "Unexpected %s" s
@@ -37,42 +38,42 @@ end
 exception Abort of Err.t
 
 module Topo = struct
-  module Ezjsonm_parser = struct
-    type t = Ezjsonm.value
+  module Ezjsone_parser = struct
+    type t = Ezjsone.value
 
     let catch_err f v =
-      try Ok (f v) with Ezjsonm.Parse_error (_, s) -> Error (`Msg s)
+      try Ok (f v) with Ezjsone.Parse_error (_, s) -> Error (`Msg s)
 
-    let find = Ezjsonm.find_opt
-    let to_string t = catch_err Ezjsonm.get_string t
-    let string = Ezjsonm.string
-    let to_float t = catch_err Ezjsonm.get_float t
-    let float = Ezjsonm.float
-    let to_int t = catch_err Ezjsonm.get_int t
-    let int = Ezjsonm.int
-    let to_list f t = catch_err (Ezjsonm.get_list f) t
-    let list f t = Ezjsonm.list f t
+    let find = Ezjsone.find_opt
+    let to_string t = catch_err Ezjsone.get_string t
+    let string = Ezjsone.string
+    let to_float t = catch_err Ezjsone.get_float t
+    let float = Ezjsone.float
+    let to_int t = catch_err Ezjsone.get_int t
+    let int = Ezjsone.int
+    let to_list f t = catch_err (Ezjsone.get_list f) t
+    let list f t = Ezjsone.list f t
     let to_array f t = Result.map Array.of_list @@ to_list f t
     let array f t = list f (Array.to_list t)
-    let to_obj t = catch_err Ezjsonm.get_dict t
-    let obj = Ezjsonm.dict
+    let to_obj t = catch_err Ezjsone.get_dict t
+    let obj = Ezjsone.dict
     let null = `Null
     let is_null = function `Null -> true | _ -> false
   end
 
-  include Topojson.Make (Ezjsonm_parser)
+  include Topojson.Make (Ezjsone_parser)
 end
 
-let decode_single_object decoder : Ezjsonm.value =
+let decode_single_object decoder : Ezjsone.value =
   let module Stack = struct
     type t =
-      | In_array of Ezjsonm.value list * t
-      | In_object of string * (string * Ezjsonm.value) list * t
+      | In_array of Ezjsone.value list * t
+      | In_object of string * (string * Ezjsone.value) list * t
       | Empty
   end in
-  let loc () = Jsonm.decoded_range decoder in
+  let loc () = Jsone.decoded_range decoder in
   let dec () =
-    match Jsonm.decode decoder with
+    match Jsone.decode decoder with
     | `Lexeme l -> l
     | `Error e -> raise (Abort (`Error (loc (), e)))
     | `End -> raise (Abort `EOI)
@@ -116,11 +117,11 @@ let decode_single_object decoder : Ezjsonm.value =
 let encode_value e json =
   let module Stack = struct
     type t =
-      | In_array of Ezjsonm.value list * t
-      | In_object of (string * Ezjsonm.value) list * t
+      | In_array of Ezjsone.value list * t
+      | In_object of (string * Ezjsone.value) list * t
       | Empty
   end in
-  let enc e l = ignore (Jsonm.encode e (`Lexeme l)) in
+  let enc e l = ignore (Jsone.encode e (`Lexeme l)) in
   let rec t v e stack =
     match v with
     | `A vs ->
@@ -134,7 +135,7 @@ let encode_value e json =
     | (`Null | `Bool _ | `Float _ | `String _) as v ->
         enc e v;
         continue e stack
-    | #Ezjsonm.t as x -> t (x :> Ezjsonm.t) e stack
+    | #Ezjsone.t as x -> t (x :> Ezjsone.t) e stack
   and arr vs e stack =
     match vs with
     | v :: vs' ->
@@ -161,16 +162,16 @@ let encode_value e json =
   value json e Stack.Empty
 
 let map_object f src dst =
-  let decoder = Jsonm.decoder src in
-  let encoder = Jsonm.encoder dst in
-  let loc () = Jsonm.decoded_range decoder in
+  let decoder = Jsone.decoder src in
+  let encoder = Jsone.encoder dst in
+  let loc () = Jsone.decoded_range decoder in
   let enc v =
-    match Jsonm.encode encoder v with
+    match Jsone.encode encoder v with
     | `Ok -> ()
     | `Partial -> raise (Abort (`Unexpected "partial encoding"))
   in
   let rec loop_through_objects decoder =
-    match Jsonm.decode decoder with
+    match Jsone.decode decoder with
     | `Lexeme `Oe ->
         ignore (enc (`Lexeme `Oe));
         ()
@@ -186,10 +187,10 @@ let map_object f src dst =
     | _ -> failwith "Unexpected lexeme"
   in
   let rec go () =
-    match Jsonm.decode decoder with
+    match Jsone.decode decoder with
     | `Lexeme (`Name "objects" as t) -> (
         enc (`Lexeme t);
-        match Jsonm.decode decoder with
+        match Jsone.decode decoder with
         | `Lexeme `Os ->
             enc (`Lexeme `Os);
             loop_through_objects decoder;
@@ -198,22 +199,22 @@ let map_object f src dst =
             enc t;
             go ()
         | `Error e -> raise (Abort (`Error (loc (), e)))
-        | `End -> ignore @@ Jsonm.encode encoder `End
+        | `End -> ignore @@ Jsone.encode encoder `End
         | `Await -> assert false)
     | `Lexeme _ as t ->
         enc t;
         go ()
     | `Error e -> raise (Abort (`Error (loc (), e)))
-    | `End -> ignore @@ Jsonm.encode encoder `End
+    | `End -> ignore @@ Jsone.encode encoder `End
     | `Await -> assert false
   in
   try Ok (go ()) with Abort e -> Error e
 
 let fold_object f initial_acc src =
-  let decoder = Jsonm.decoder src in
-  let loc () = Jsonm.decoded_range decoder in
+  let decoder = Jsone.decoder src in
+  let loc () = Jsone.decoded_range decoder in
   let rec loop_through_objects decoder initial_acc =
-    match Jsonm.decode decoder with
+    match Jsone.decode decoder with
     | `Lexeme `Oe -> initial_acc
     | `Lexeme (`Name geometry_name) -> (
         let geometry_json = decode_single_object decoder in
@@ -225,9 +226,9 @@ let fold_object f initial_acc src =
     | _ -> failwith "Unexpected lexeme"
   in
   let rec go acc =
-    match Jsonm.decode decoder with
+    match Jsone.decode decoder with
     | `Lexeme (`Name "objects") -> (
-        match Jsonm.decode decoder with
+        match Jsone.decode decoder with
         | `Lexeme `Os ->
             let acc = loop_through_objects decoder acc in
             go acc
@@ -242,6 +243,5 @@ let fold_object f initial_acc src =
   in
   try Ok (go initial_acc) with Abort e -> Error e
 
-module Ezjsonm = Ezjsonm
-module Jsonm = Jsonm
-module Uutf = Uutf
+module Ezjsone = Ezjsone
+module Jsone = Jsone
