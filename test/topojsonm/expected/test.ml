@@ -22,7 +22,6 @@ let test_map_objects_topojson () =
   in
   let res = Topojsonm.map_object f src dst in
 
-  close_in file;
   match res with
   | Ok () ->
       let json_str = Buffer.contents buffer in
@@ -34,4 +33,24 @@ let test_map_objects_topojson () =
       Topojsonm.Err.pp Format.err_formatter e;
       failwith "Internal err"
 
-let () = test_map_objects_topojson ()
+let test_fold_object () =
+  let file = open_in "../../topojson/test_cases/files/exemplar.json" in
+  let s = Jsonm.decoder (`Channel file) in
+  let src = Jsonm.decoder_src s in
+  let initial_acc = 0 in
+  let open Topojsonm in
+  let f acc (_, _geometry) = acc + 1 in
+  match fold_object f initial_acc src with
+  | Ok final_acc ->
+      print_string "Total acc: ";
+      print_int final_acc;
+      print_newline ();
+      if final_acc > 0 then print_endline "fold_object test passed"
+      else failwith "fold_object test failed"
+  | Error e ->
+      Topojsonm.Err.pp Format.err_formatter e;
+      failwith "Internal err"
+
+let () =
+test_map_objects_topojson ();
+test_fold_object ()

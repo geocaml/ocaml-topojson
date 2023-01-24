@@ -37,13 +37,17 @@ val map_object :
   Jsonm.src ->
   Jsonm.dst ->
   (unit, Err.t) result
-(** [map_object f src dst] will apply [f] to all TopoJson objects. This is
-    essentially any
-    {{:https://datatracker.ietf.org/doc/html/rfc7946#section-3.1} geometry
-    object}.
+(** [map_object f src dst] will apply [f] to all TopoJson objects. The map will
+    recurse into TopoJson Object. Note for the moment if you have a single
+    geometry object as your document, this will not work. *)
 
-    The map will recurse into geometry collections. Note for the moment if you
-    have a single geometry object as your document, this will not work. *)
+val fold_object :
+  ('acc -> string * Topo.Geometry.t -> 'acc) ->
+  'acc ->
+  [< Jsonm.src ] ->
+  ('acc, Err.t) result
+(** [fold_object f initial_acc src] is much like {!map_object} but allows you to
+    accumulate some result that is then returned to you. *)
 
 module Ezjsonm = Ezjsonm
 module Jsonm = Jsonm
