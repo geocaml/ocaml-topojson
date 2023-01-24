@@ -51,4 +51,6 @@ let test_fold_object () =
       Topojsonm.Err.pp Format.err_formatter e;
       failwith "Internal err"
 
-let () = test_fold_object ()
+let () =
+test_map_objects_topojson ();
+test_fold_object ()
