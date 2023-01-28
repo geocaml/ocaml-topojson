@@ -132,7 +132,7 @@ But first we must confirm that it is a topology.
 ```
 
 # Topojsone
-Topojson is a non-blocking, streaming parser for TopoJSON objects. It uses jsone and [Eio](https://github.com/ocaml-multicore/eio) library.
+Topojson is a non-blocking, streaming parser for TopoJSON objects. It uses jsone and it is up to the user to provide non-blocking versions of the source and destination functions for the parser to be truly non-blocking. One such library that can provide these functions is [Eio](https://github.com/ocaml-multicore/eio) and that is what we shall use for the rest of the example.
 
 ## Sources
 `src_of_flow` takes a "flow" and returns a function that reads from the flow into a buffer and returns a substring of the buffer.
@@ -140,16 +140,13 @@ Topojson is a non-blocking, streaming parser for TopoJSON objects. It uses jsone
 # let src_of_flow flow =
   let buff = Cstruct.create 2048 in
   fun () ->
-    let got = Eio.Flow.(read flow buff) in
+    let got = Eio.Flow.(single_read flow buff) in
     let t = Cstruct.sub buff 0 got in
     t;;
-Line 4, characters 25-29:
-Alert deprecated: Eio.Flow.read
-Use single_read if you really want this.
 val src_of_flow : #Eio.Flow.source -> unit -> Cstruct.t = <fun>
 ```
 
-`with_src` opens a file with a given name, creates a source of flow using the file, then calls a given function with that source of flow as an argument.
+`with_src` opens a file with a given name creating a flow in the process. We can then use `source_of_flow` to turn this into a function that is compatible with the `Topojsone` API.
 
 ```ocaml
 # let with_src cwd f func =
@@ -160,7 +157,7 @@ val with_src :
 ```
 
 ## Destinations
-`buffer_to_dst` is a function that takes a buffer and a Cstruct, and turns it into a destination by coping the contents of the Cstruct into the buffer using the Eio.Flow.copy function.
+Destinations are functions that take a buffer full of data and should put that somewhere. `buffer_to_dst` is a function that takes a buffer and a Cstruct, and turns it into a destination by copying the contents of the Cstruct into the buffer using the `Eio.Flow.copy` function.
 ```ocaml
 # let buffer_to_dst buf bs =
   Eio.Flow.(copy (cstruct_source [ bs ]) (buffer_sink buf));;
