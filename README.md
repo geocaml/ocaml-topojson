@@ -9,6 +9,11 @@ A collection of libraries in pure OCaml for _parsing, constructing, and manipula
         - [Constructing a TopoJSON Value](#constructing-a-topojson-value)
     - [Read a string](#read-a-string)
     - [Accessing members](#accessing-members)
+	- [Topojsone](#topojsone)
+	  - [Sources](#sources)
+	  - [Destinations](#destinations)
+	  - [Mapping](#mapping)
+	  - [Folding](#folding)
 
 ## Introduction
 
@@ -37,7 +42,7 @@ open Topojson
 
 We don't restrict ourself to a single JSON parser implementation as it allows us to use the best one depending on where the code is run (e.g. the browser's built-in parser).
 
-### Reading TopoJSON 
+### Reading TopoJSON
 
 We can describe a TopoJSON object using the Ezjsonm primitives.
 
@@ -107,9 +112,9 @@ format.
 
 
 ```ocaml
-# let topojson = 
+# let topojson =
   Result.get_ok @@
-  Topojson.of_json @@ 
+  Topojson.of_json @@
   Ezjsonm.value_from_string topojson_string;;
 val topojson : t = <abstr>
 ```
@@ -124,4 +129,104 @@ But first we must confirm that it is a topology.
   | Geometry _ -> failwith "Expected a topology!"
   | Topology t -> Topology.foreign_members t;;
 - : (string * json) list = [("extra", `A [`String "Wow!"])]
+```
+
+# Topojsone
+Topojson is a non-blocking, streaming parser for TopoJSON objects. It uses jsone and [Eio](https://github.com/ocaml-multicore/eio) library.
+
+## Sources
+`src_of_flow` takes a "flow" and returns a function that reads from the flow into a buffer and returns a substring of the buffer.
+```ocaml
+# let src_of_flow flow =
+  let buff = Cstruct.create 2048 in
+  fun () ->
+    let got = Eio.Flow.(read flow buff) in
+    let t = Cstruct.sub buff 0 got in
+    t;;
+Line 4, characters 25-29:
+Alert deprecated: Eio.Flow.read
+Use single_read if you really want this.
+val src_of_flow : #Eio.Flow.source -> unit -> Cstruct.t = <fun>
+```
+
+`with_src` opens a file with a given name, creates a source of flow using the file, then calls a given function with that source of flow as an argument.
+
+```ocaml
+# let with_src cwd f func =
+  Eio.Path.(with_open_in (cwd / f)) @@ fun ic -> func @@ src_of_flow ic;;
+val with_src :
+  #Eio.Fs.dir Eio.Path.t -> string -> ((unit -> Cstruct.t) -> 'a) -> 'a =
+  <fun>
+```
+
+## Destinations
+`buffer_to_dst` is a function that takes a buffer and a Cstruct, and turns it into a destination by coping the contents of the Cstruct into the buffer using the Eio.Flow.copy function.
+```ocaml
+# let buffer_to_dst buf bs =
+  Eio.Flow.(copy (cstruct_source [ bs ]) (buffer_sink buf));;
+val buffer_to_dst : Buffer.t -> Cstruct.t -> unit = <fun>
+```
+
+## Mapping
+You may wish to visit all of the `objects` in your object.
+
+```ocaml
+# Topojsone.map_object;;
+- : (string * Topojsone.Topo.Geometry.t -> string * Topojsone.Topo.Geometry.t) ->
+    Geojsone.Jsone.src ->
+    Geojsone.Jsone.dst -> (unit, Topojsone.Err.t) result
+= <fun>
+```
+For example, we could rename the `example` object and change the value of the linstrings arcs
+```ocaml
+# let test_map_objects (name, geometry) =
+    let new_name = "new_" ^ name in
+    let open Topojsone in
+    let new_geometry =
+      match
+        (Topo.Geometry.geometry geometry, Topo.Geometry.foreign_members geometry)
+      with
+      | Topo.Geometry.Collection _, f ->
+          Topo.Geometry.(
+            v ~foreign_members:f Topo.Geometry.(linestring (Arc_index.v [ 2 ])))
+      | _ -> geometry
+    in
+    (new_name, new_geometry)
+    let buf = Buffer.create 256;;
+val test_map_objects :
+  string * Topojsone.Topo.Geometry.t -> string * Topojsone.Topo.Geometry.t =
+  <fun>
+val buf : Buffer.t = <abstr>
+```
+Applying to our `topojson_string` we will have
+
+```ocaml
+# let source () = src_of_flow @@ Eio.Flow.string_source topojson_string;;
+val source : unit -> unit -> Cstruct.t = <fun>
+# Topojsone.(map_object test_map_objects (source ()) (buffer_to_dst buf));;
+- : (unit, Topojsone.Err.t) result = Ok ()
+# Buffer.contents buf;;
+- : string =
+"{\"arcs\":[[[0,0],[0,9999],[2000,0],[0,-9999],[-2000,0]]],\"objects\":{\"new_example \":{\"type\":\"LineString\",\"arcs\":[2]}},\"transform\":{\"scale\":[0.0005,0.0001],\"translate\":[100,0]},\"type\":\"Topology\",\"extra\":[\"Wow!\"]}"
+```
+
+## Folding
+Folding is similar to mapping except you can accumulate a value as you iterate over the document.
+
+```ocaml
+# Topojsone.fold_object;;
+- : ('acc -> string * Topojsone.Topo.Geometry.t -> 'acc) ->
+    'acc -> Topojsone.Jsone.src -> ('acc, Topojsone.Err.t) result
+= <fun>
+```
+
+We could count the number of objects present for instance
+```ocaml
+  let count_objects acc _ = acc + 1
+```
+And we can apply it to our running example.
+
+```ocaml
+# Topojsone.fold_object count_objects 0 (source ()) ;;
+- : (int, Topojsone.Err.t) result = Ok 1
 ```
