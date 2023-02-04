@@ -1,4 +1,4 @@
 (library
  (public_name topojson)
  (name topojson)
- (libraries))
+ (libraries geojson))

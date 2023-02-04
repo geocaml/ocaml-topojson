@@ -616,4 +616,47 @@ module Make (J : Intf.Json) = struct
         Geometry.to_json g
 
   let v ?bbox topojson = { bbox; topojson }
-end
+
+
+let extract_coordinates = function
+  | `List coordinates ->
+      let rec loop acc = function
+        | [] -> acc
+        | hd :: tl ->
+            let coord =
+              match hd with
+              | `List c -> List.map J.to_float c
+              | _ -> failwith "Invalid coordinate format"
+            in
+            loop (coord :: acc) tl
+      in
+      loop [] coordinates
+  | _ -> failwith "Not a valid LineString or Polygon"
+
+let extract_lines = function
+  | `Assoc [ ("type", `String "LineString"); ("coordinates", coordinates) ] ->
+      extract_coordinates coordinates
+  | _ -> failwith "Not a valid LineString"
+
+let extract_rings = function
+  | `Assoc [ ("type", `String "Polygon"); ("coordinates", `List rings) ] ->
+      let rec loop acc = function
+        | [] -> acc
+        | hd :: tl -> loop (extract_coordinates hd :: acc) tl
+      in
+      loop [] rings
+  | _ -> failwith "Not a valid Polygon"
+
+let extract_multilinestring = function
+     | `Assoc [("type", `String "MultiLineString"); ("coordinates", `List multilinestrings)] ->
+         List.map extract_coordinates multilinestrings
+     | _ -> failwith "Not a valid MultiLineString"
+
+   let extract_multipolygon = function
+     | `Assoc [("type", `String "MultiPolygon"); ("coordinates", `List multipolygons)] ->
+         let rec loop acc  = function
+           | [] -> acc
+           | hd :: tl -> loop (extract_rings hd :: acc) tl
+         in loop [] multipolygons
+     | _ -> failwith "Not a valid MultiPolygon"
+    end
