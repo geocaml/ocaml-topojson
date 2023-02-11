@@ -616,54 +616,50 @@ module Make (J : Intf.Json) = struct
         Geometry.to_json g
 
   let v ?bbox topojson = { bbox; topojson }
-
-  let extract_coordinates = function
-    | `List coordinates ->
-        let rec loop acc = function
-          | [] -> acc
-          | hd :: tl ->
-              let coord =
-                match hd with
-                | `List c -> List.map J.to_float c
-                | _ -> failwith "Invalid coordinate format"
-              in
-              loop (coord :: acc) tl
-        in
-        loop [] coordinates
-    | _ -> failwith "Not a valid LineString or Polygon"
-
-  let extract_lines = function
-    | `Assoc [ ("type", `String "LineString"); ("coordinates", coordinates) ] ->
-        extract_coordinates coordinates
-    | _ -> failwith "Not a valid LineString"
-
-  let extract_rings = function
-    | `Assoc [ ("type", `String "Polygon"); ("coordinates", `List rings) ] ->
-        let rec loop acc = function
-          | [] -> acc
-          | hd :: tl -> loop (extract_coordinates hd :: acc) tl
-        in
-        loop [] rings
-    | _ -> failwith "Not a valid Polygon"
-
-  let extract_multilinestring = function
-    | `Assoc
-        [
-          ("type", `String "MultiLineString");
-          ("coordinates", `List multilinestrings);
-        ] ->
-        List.map extract_coordinates multilinestrings
-    | _ -> failwith "Not a valid MultiLineString"
-
-  let extract_multipolygon = function
-    | `Assoc
-        [
-          ("type", `String "MultiPolygon"); ("coordinates", `List multipolygons);
-        ] ->
-        let rec loop acc = function
-          | [] -> acc
-          | hd :: tl -> loop (extract_rings hd :: acc) tl
-        in
-        loop [] multipolygons
-    | _ -> failwith "Not a valid MultiPolygon"
 end
+
+module Geojson = Geojson.Make (Ezjsonm_parser)
+
+let extract_lines_from_geometry (t : Geojson.t) :
+    Geojson.Geometry.Position.t array list =
+  let open Geojson.Geometry in
+  let geojson = Geojson.geojson t in
+  match geojson with
+  | Geometry g -> (
+      let geo = geometry g in
+      match geo with
+      | LineString ls -> [ LineString.coordinates ls ]
+      | MultiLineString ml ->
+          let lines = MultiLineString.lines ml in
+          let arr = Array.map LineString.coordinates lines in
+          Array.to_list arr
+      | Polygon p ->
+          let rings = Polygon.rings p in
+          let arr = Array.map LineString.coordinates rings in
+          Array.to_list arr
+      | MultiPolygon mp ->
+          let rings = MultiPolygon.polygons mp in
+          let r = Array.to_list (Array.map Polygon.rings rings) in
+          let arr = Array.map LineString.coordinates (Array.concat r) in
+          Array.to_list arr
+      | Point _ -> []
+      | MultiPoint _ -> []
+      | _ -> [])
+  | _ -> failwith "Not a valid Geometry"
+
+let extract_from_feature (f : Geojson.Feature.t) :
+    Geojson.Geometry.Position.t array list =
+  let open Geojson.Feature in
+  let geometry = geometry f in
+  match geometry with
+  | Some t ->
+      let p = Geojson.Geometry t in
+      let geo = Geojson.v p in
+      extract_lines_from_geometry geo
+  | None -> []
+
+let extract_from_feature_collection (fc : Geojson.Feature.Collection.t) :
+    Geojson.Geometry.Position.t array list =
+  let open Geojson.Feature.Collection in
+  let features = features fc in
+  List.concat (List.map extract_from_feature features)
