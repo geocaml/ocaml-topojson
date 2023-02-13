@@ -282,21 +282,6 @@ module type S = sig
 
     val to_json : ?bbox:float array -> t -> json
     val of_json : json -> (t, [ `Msg of string ]) result
-
-    val extract_lines :
-      [> `Assoc of
-         (string
-         * [> `List of [> `List of json list ] list | `String of string ])
-         list ] ->
-      (float, [ `Msg of string ]) result list list
-
-    val extract_rings :
-      [> `Assoc of
-         (string
-         * [> `List of [> `List of [> `List of json list ] list ] list
-           | `String of string ])
-         list ] ->
-      (float, [ `Msg of string ]) result list list list
   end
 
   type topojson = Topology of Topology.t | Geometry of Geometry.t
