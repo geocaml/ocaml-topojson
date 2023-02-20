@@ -298,6 +298,14 @@ module type S = sig
       error. *)
 
   val to_json : t -> json
+
+  module Set : sig
+    type t
+    type elt = Geometry.Position.t
+  end
+
+  val of_array : 'a array -> Set.elt array list
+  val find_junctions : Set.elt array list -> Set.elt list
 end
 
 module type Topojson = sig

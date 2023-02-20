@@ -634,13 +634,25 @@ module Make (J : Intf.Json) = struct
             Array.to_list arr
         | Polygon p ->
             let rings = Polygon.rings p in
-            let arr = Array.map LineString.coordinates rings in
-            Array.to_list arr
+            let arr =
+              Array.map
+                (fun r ->
+                  Array.to_list (LineString.coordinates r)
+                  @ [ List.hd (Array.to_list (LineString.coordinates r)) ])
+                rings
+            in
+            Array.to_list (Array.map Array.of_list arr)
         | MultiPolygon mp ->
             let rings = MultiPolygon.polygons mp in
             let r = Array.to_list (Array.map Polygon.rings rings) in
-            let arr = Array.map LineString.coordinates (Array.concat r) in
-            Array.to_list arr
+            let arr =
+              Array.map
+                (fun r ->
+                  Array.to_list (LineString.coordinates r)
+                  @ [ List.hd (Array.to_list (LineString.coordinates r)) ])
+                (Array.concat r)
+            in
+            Array.to_list (Array.map Array.of_list arr)
         | Point _ -> []
         | MultiPoint _ -> []
         | _ -> [])
@@ -663,26 +675,46 @@ module Make (J : Intf.Json) = struct
     let features = features fc in
     List.concat (List.map extract_from_feature features)
 
-  let find_junctions (lines : Geojson.Geometry.Position.t array list) :
+  module Set = struct
+    include Set.Make (struct
+      type t = Geojson.Geometry.Position.t
+
+      let compare = compare
+    end)
+  end
+
+  let of_array (arr : 'a array) : Set.elt array list =
+    let sets = ref [] in
+    let set = ref Set.empty in
+    Array.iter
+      (fun x ->
+        if Set.mem x !set then sets := !set :: !sets else set := Set.add x !set)
+      arr;
+    List.rev_map (fun s -> Array.of_list (Set.elements s)) (!set :: !sets)
+
+  let find_junctions (lines : Geometry.Position.t array list) :
       Geojson.Geometry.Position.t list =
     let open Geojson.Geometry in
-    let junction_table : (Position.t, Position.t list) Hashtbl.t =
+    let junction_table : (Position.t, Set.t) Hashtbl.t =
       Hashtbl.create (List.length lines)
     in
     let junction : Position.t list = [] in
     List.iter
       (fun line ->
         let line_length = Array.length line in
-        for i = 0 to line_length - 2 do
+        for i = 1 to line_length - 2 do
           let point1 = line.(i) in
-          let point2 = line.(i + 1) in
+          let point2 = line.(i - 1) in
+          let point3 = line.(i + 1) in
           if Hashtbl.mem junction_table point1 then
             let neighbors = Hashtbl.find junction_table point1 in
-            Hashtbl.replace junction_table point1 (point2 :: neighbors)
-          else Hashtbl.add junction_table point1 [ point2 ];
-
+            Hashtbl.replace junction_table point1
+              (Set.add point2 (Set.add point3 neighbors))
+          else
+            Hashtbl.add junction_table point1 (Set.of_list [ point2; point3 ]);
           let neighbors = Hashtbl.find junction_table point1 in
-          if List.length neighbors > 2 then ref junction := point1 :: junction
+          if Set.cardinal neighbors > 2 then
+            ref junction := point1 :: !(ref junction)
         done)
       lines;
     !(ref junction)
