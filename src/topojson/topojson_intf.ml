@@ -71,7 +71,7 @@ module type Geometry = sig
   type json
 
   module Position : sig
-    type t
+    type t = float array
     (** A position - a longitude and latitude with an optional altitude *)
 
     val lng : t -> float
@@ -299,13 +299,8 @@ module type S = sig
 
   val to_json : t -> json
 
-  module Set : sig
-    type t
-    type elt = Geometry.Position.t
-  end
-
-  val of_array : 'a array -> Set.elt array list
-  val find_junctions : Set.elt array list -> Set.elt list
+  val of_array : Geometry.Position.t array -> Geometry.Position.t array list
+  val find_junctions : Geometry.Position.t array list -> Geometry.Position.t list
 end
 
 module type Topojson = sig

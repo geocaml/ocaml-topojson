@@ -669,21 +669,19 @@ module Make (J : Intf.Json) = struct
         extract_lines_from_geometry geo
     | None -> []
 
-  let extract_from_feature_collection (fc : Geojson.Feature.Collection.t) :
+  let _extract_from_feature_collection (fc : Geojson.Feature.Collection.t) :
       Geojson.Geometry.Position.t array list =
     let open Geojson.Feature.Collection in
     let features = features fc in
     List.concat (List.map extract_from_feature features)
 
-  module Set = struct
-    include Set.Make (struct
+  module Set = Set.Make (struct
       type t = Geojson.Geometry.Position.t
 
       let compare = compare
     end)
-  end
 
-  let of_array (arr : 'a array) : Set.elt array list =
+  let of_array arr =
     let sets = ref [] in
     let set = ref Set.empty in
     Array.iter
@@ -698,7 +696,7 @@ module Make (J : Intf.Json) = struct
     let junction_table : (Position.t, Set.t) Hashtbl.t =
       Hashtbl.create (List.length lines)
     in
-    let junction : Position.t list = [] in
+    let junction : Position.t list ref = ref [] in
     List.iter
       (fun line ->
         let line_length = Array.length line in
@@ -714,8 +712,8 @@ module Make (J : Intf.Json) = struct
             Hashtbl.add junction_table point1 (Set.of_list [ point2; point3 ]);
           let neighbors = Hashtbl.find junction_table point1 in
           if Set.cardinal neighbors > 2 then
-            ref junction := point1 :: !(ref junction)
+            junction := point1 :: !junction
         done)
       lines;
-    !(ref junction)
+    !junction
 end

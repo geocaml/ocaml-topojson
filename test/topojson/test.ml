@@ -127,7 +127,7 @@ let pp_transform ppf t =
 
 let transform = Alcotest.testable pp_transform Stdlib.( = )
 
-let to_string pp a =
+let _to_string pp a =
   pp Format.str_formatter a;
   Format.flush_str_formatter ()
 
