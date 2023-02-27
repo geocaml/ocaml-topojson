@@ -675,15 +675,13 @@ module Make (J : Intf.Json) = struct
     let features = features fc in
     List.concat (List.map extract_from_feature features)
 
-  module Set = struct
-    include Set.Make (struct
-      type t = Geojson.Geometry.Position.t
+  module Set = Set.Make (struct
+    type t = Geojson.Geometry.Position.t
 
-      let compare = compare
-    end)
-  end
+    let compare = compare
+  end)
 
-  let of_array (arr : 'a array) : Set.elt array list =
+  let of_array arr =
     let sets = ref [] in
     let set = ref Set.empty in
     Array.iter
@@ -698,14 +696,14 @@ module Make (J : Intf.Json) = struct
     let junction_table : (Position.t, Set.t) Hashtbl.t =
       Hashtbl.create (List.length lines)
     in
-    let junction : Position.t list = [] in
+    let junction : Position.t list ref = ref [] in
     List.iter
       (fun line ->
         let line_length = Array.length line in
-        for i = 1 to line_length - 2 do
+        for i = 0 to line_length - 1 do
           let point1 = line.(i) in
-          let point2 = line.(i - 1) in
-          let point3 = line.(i + 1) in
+          let point2 = if i > 0 then line.(i - 1) else line.(line_length - 1) in
+          let point3 = if i < line_length - 1 then line.(i + 1) else line.(0) in
           if Hashtbl.mem junction_table point1 then
             let neighbors = Hashtbl.find junction_table point1 in
             Hashtbl.replace junction_table point1
@@ -713,9 +711,8 @@ module Make (J : Intf.Json) = struct
           else
             Hashtbl.add junction_table point1 (Set.of_list [ point2; point3 ]);
           let neighbors = Hashtbl.find junction_table point1 in
-          if Set.cardinal neighbors > 2 then
-            ref junction := point1 :: !(ref junction)
+          if Set.cardinal neighbors > 2 then junction := point1 :: !junction
         done)
       lines;
-    !(ref junction)
+    !junction
 end
