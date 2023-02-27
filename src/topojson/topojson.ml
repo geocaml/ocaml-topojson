@@ -616,4 +616,103 @@ module Make (J : Intf.Json) = struct
         Geometry.to_json g
 
   let v ?bbox topojson = { bbox; topojson }
+
+  module Geojson = Geojson.Make (J)
+
+  let extract_lines_from_geometry (t : Geojson.t) :
+      Geojson.Geometry.Position.t array list =
+    let open Geojson.Geometry in
+    let geojson = Geojson.geojson t in
+    match geojson with
+    | Geometry g -> (
+        let geo = geometry g in
+        match geo with
+        | LineString ls -> [ LineString.coordinates ls ]
+        | MultiLineString ml ->
+            let lines = MultiLineString.lines ml in
+            let arr = Array.map LineString.coordinates lines in
+            Array.to_list arr
+        | Polygon p ->
+            let rings = Polygon.rings p in
+            let arr =
+              Array.map
+                (fun r ->
+                  Array.to_list (LineString.coordinates r)
+                  @ [ List.hd (Array.to_list (LineString.coordinates r)) ])
+                rings
+            in
+            Array.to_list (Array.map Array.of_list arr)
+        | MultiPolygon mp ->
+            let rings = MultiPolygon.polygons mp in
+            let r = Array.to_list (Array.map Polygon.rings rings) in
+            let arr =
+              Array.map
+                (fun r ->
+                  Array.to_list (LineString.coordinates r)
+                  @ [ List.hd (Array.to_list (LineString.coordinates r)) ])
+                (Array.concat r)
+            in
+            Array.to_list (Array.map Array.of_list arr)
+        | Point _ -> []
+        | MultiPoint _ -> []
+        | _ -> [])
+    | _ -> failwith "Not a valid Geometry"
+
+  let extract_from_feature (f : Geojson.Feature.t) :
+      Geojson.Geometry.Position.t array list =
+    let open Geojson.Feature in
+    let geometry = geometry f in
+    match geometry with
+    | Some t ->
+        let p = Geojson.Geometry t in
+        let geo = Geojson.v p in
+        extract_lines_from_geometry geo
+    | None -> []
+
+  let extract_from_feature_collection (fc : Geojson.Feature.Collection.t) :
+      Geojson.Geometry.Position.t array list =
+    let open Geojson.Feature.Collection in
+    let features = features fc in
+    List.concat (List.map extract_from_feature features)
+
+  module Set = Set.Make (struct
+    type t = Geojson.Geometry.Position.t
+
+    let compare = compare
+  end)
+
+  let of_array arr =
+    let sets = ref [] in
+    let set = ref Set.empty in
+    Array.iter
+      (fun x ->
+        if Set.mem x !set then sets := !set :: !sets else set := Set.add x !set)
+      arr;
+    List.rev_map (fun s -> Array.of_list (Set.elements s)) (!set :: !sets)
+
+  let find_junctions (lines : Geometry.Position.t array list) :
+      Geojson.Geometry.Position.t list =
+    let open Geojson.Geometry in
+    let junction_table : (Position.t, Set.t) Hashtbl.t =
+      Hashtbl.create (List.length lines)
+    in
+    let junction : Position.t list ref = ref [] in
+    List.iter
+      (fun line ->
+        let line_length = Array.length line in
+        for i = 0 to line_length - 1 do
+          let point1 = line.(i) in
+          let point2 = if i > 0 then line.(i - 1) else line.(line_length - 1) in
+          let point3 = if i < line_length - 1 then line.(i + 1) else line.(0) in
+          if Hashtbl.mem junction_table point1 then
+            let neighbors = Hashtbl.find junction_table point1 in
+            Hashtbl.replace junction_table point1
+              (Set.add point2 (Set.add point3 neighbors))
+          else
+            Hashtbl.add junction_table point1 (Set.of_list [ point2; point3 ]);
+          let neighbors = Hashtbl.find junction_table point1 in
+          if Set.cardinal neighbors > 2 then junction := point1 :: !junction
+        done)
+      lines;
+    !junction
 end

@@ -39,6 +39,7 @@ module Ezjsonm_parser = struct
 end
 
 module Topojson = Topojson.Make (Ezjsonm_parser)
+module Geojson = Geojson.Make (Ezjsonm_parser)
 
 let expected_arcs =
   let open Topojson in
@@ -126,6 +127,10 @@ let pp_transform ppf t =
 
 let transform = Alcotest.testable pp_transform Stdlib.( = )
 
+let _to_string pp a =
+  pp Format.str_formatter a;
+  Format.flush_str_formatter ()
+
 let geometries () =
   let open Topojson in
   let s = read_file "./test_cases/files/exemplar.json" in
@@ -155,6 +160,41 @@ let geometries () =
       in
       Alcotest.(check inner_geometry) "same point" geo_polygon expected_polygon
   | _ -> Alcotest.fail "Expected a collection of geometries"
+
+let () =
+  let s = read_file "./test_cases/files/multilinestring.json" in
+  let json = Ezjsonm.value_from_string s in
+  let t = Geojson.of_json json |> Result.get_ok in
+  let open Geojson.Geometry in
+  let geojson = Geojson.geojson t in
+  let coords =
+    match geojson with
+    | Geometry g -> (
+        let geo = geometry g in
+        match geo with MultiLineString lines -> lines | _ -> assert false)
+    | _ -> failwith ""
+  in
+  let json' = Geojson.to_json t in
+  let multi_line_string_to_list (mls : MultiLineString.t) :
+      Geojson.Geometry.Position.t array list =
+    let lines = MultiLineString.lines mls in
+    List.map (fun line -> LineString.coordinates line) (Array.to_list lines)
+  in
+  let coords' =
+    let lines =
+      List.concat (List.map Array.to_list (multi_line_string_to_list coords))
+    in
+    let arr = Array.of_list lines in
+    Topojson.find_junctions (Topojson.of_array arr)
+  in
+  let fmt_positions (pos : Geojson.Geometry.Position.t) : string =
+    Fmt.str "(%f, %f)" pos.(0) pos.(1)
+  in
+  let fmt_junctions (junctions : Geojson.Geometry.Position.t list) : string =
+    String.concat "; " (List.map fmt_positions junctions)
+  in
+  Fmt.pr "Junctions: %s\n" (fmt_junctions coords');
+  Alcotest.(check ezjsonm) "same json" json json'
 
 let main () =
   let s = read_file "./test_cases/files/exemplar.json" in

@@ -2,4 +2,4 @@
  (name test)
  (deps
   (source_tree test_cases))
- (libraries alcotest ezjsonm topojson))
+ (libraries alcotest ezjsonm topojson geojson))

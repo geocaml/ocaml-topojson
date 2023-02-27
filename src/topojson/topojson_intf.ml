@@ -71,7 +71,7 @@ module type Geometry = sig
   type json
 
   module Position : sig
-    type t
+    type t = float array
     (** A position - a longitude and latitude with an optional altitude *)
 
     val lng : t -> float
@@ -298,6 +298,10 @@ module type S = sig
       error. *)
 
   val to_json : t -> json
+  val of_array : Geometry.Position.t array -> Geometry.Position.t array list
+
+  val find_junctions :
+    Geometry.Position.t array list -> Geometry.Position.t list
 end
 
 module type Topojson = sig
