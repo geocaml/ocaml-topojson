@@ -32,6 +32,6 @@
  (depends
    (topojson (= :version))
    geojsone
-   (eio_main :with-test)))
+   (eio_main (and (>= 0.7) :with-test))))
 
 (using mdx 0.2)
