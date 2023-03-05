@@ -1,5 +1,3 @@
-(* Types and Signatures of various modules/ functions required by topojson.ml *)
-
 module type Json = sig
   type t
   (** The type your parser uses to represent a parsed JSON object. *)
@@ -71,7 +69,7 @@ module type Geometry = sig
   type json
 
   module Position : sig
-    type t
+    type t = float array
     (** A position - a longitude and latitude with an optional altitude *)
 
     val lng : t -> float
@@ -247,7 +245,32 @@ module type S = sig
   type json
   (** The internal representation of JSON *)
 
+  (** {2 Geometries} *)
+
+  (** TopoJSON objects are primarily made up of geometry primitives that are the
+      same as those used in {!Geojson}. For example you can have a single
+      [Point] or [Linestring].
+
+      These are grouped under the {!Geometry} module and in particular the
+      {!Geometry.geometry} type. These can be accessed and pattern-matched
+      against using the {!Geometry.geometry function}. For example:
+
+      {[
+        let is_linestring t =
+          let open Topojson in
+          match Geometry.geometry t with
+          | Geometry.LineString _ -> true
+          | _ -> false
+      ]}*)
+
   module Geometry : Geometry with type json = json
+
+  (** {2 Topologies} *)
+
+  (** The {!Topology.t} is the most common TopoJSON object for the main
+      document. This contains a map of geometry objects along with other
+      important components of the topology including the arc index and transform
+      information. *)
 
   module Topology : sig
     type t
@@ -277,18 +300,34 @@ module type S = sig
     (** Construct a new topology object getting the arcs and the geometry
         objects. *)
 
-    val transform_to_json : transform -> json
-    (** Converts transform to json. *)
-
     val to_json : ?bbox:float array -> t -> json
     val of_json : json -> (t, [ `Msg of string ]) result
   end
 
-  type topojson = Topology of Topology.t | Geometry of Geometry.t
+  (** {2 TopoJSON Objects} *)
+
+  (** Finally we have the main TopoJSON object. Most frequently this will be a
+      {!Topology.t} but could technically be a standalone {!Geometry.t}
+      according to the specification.*)
+
+  type topojson =
+    | Topology of Topology.t
+    | Geometry of Geometry.t  (** The underlying TopoJSON datastructure. *)
+
   type t
+  (** The TopoJSON object. *)
+
+  val topology_exn : t -> Topology.t
+  (** Accessor for the TopoJSON data. This will try to access a
+      {!Topology.t}.contents
+
+      @raise Invalid_argument if the data is a geometry. *)
 
   val topojson : t -> topojson
+  (** Accessor for the TopoJSON data. *)
+
   val bbox : t -> float array option
+  (** Accessor for the optional bounding-box for the entire TopoJSON object. *)
 
   val v : ?bbox:float array -> topojson -> t
   (** Construct a new TopoJSON object, optionally with a bounding-box. *)
@@ -298,16 +337,18 @@ module type S = sig
       error. *)
 
   val to_json : t -> json
+  (** [to_json t] converts the TopoJSON object [t] to JSON. *)
 end
 
 module type Topojson = sig
   module type S = S
-  (** Types for Topojson texts and objects *)
+  (** Types for TopoJSON objects *)
 
   module type Json = Json
-  (** Types for the JSON parser *)
+  (** Types for the JSON parser. A user must provide a JSON parser to the
+      {!Make} functor in order to have a working TopoJSON library. *)
 
-  (** A functor that takes a Json parsing implementation and returns a TopoJson
+  (** A functor that takes a Json parsing implementation and returns a TopoJSON
       parser and constructor. *)
   module Make (J : Json) : S with type json = J.t
 end

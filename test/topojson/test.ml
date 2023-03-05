@@ -120,15 +120,18 @@ let pp_foreign_member ppf (v : (string * Ezjsonm.value) list) =
 let expected_foreign_members = [ ("arcs", `A [ `Float 0.1 ]) ]
 let foreign_members = Alcotest.testable pp_foreign_member Stdlib.( = )
 
-let pp_transform ppf t =
-  Fmt.pf ppf "%s"
-    (Ezjsonm.value_to_string (Topojson.Topology.transform_to_json t))
+let pp_transform ppf (t : Topojson.Topology.transform) =
+  Fmt.pf ppf "translate: (%a), scale: (%a)"
+    Fmt.(pair float float)
+    t.translate
+    Fmt.(pair float float)
+    t.scale
 
 let transform = Alcotest.testable pp_transform Stdlib.( = )
 
 let geometries () =
   let open Topojson in
-  let s = read_file "./test_cases/files/exemplar.json" in
+  let s = read_file "./test_cases/topology.json" in
   let json = Ezjsonm.value_from_string s in
   let o = Topojson.of_json json |> Result.get_ok in
   let f =
@@ -157,7 +160,7 @@ let geometries () =
   | _ -> Alcotest.fail "Expected a collection of geometries"
 
 let main () =
-  let s = read_file "./test_cases/files/exemplar.json" in
+  let s = read_file "./test_cases/topology.json" in
   let json = Ezjsonm.value_from_string s in
   let topojson_obj = Topojson.of_json json in
   match (topojson_obj, Result.map Topojson.topojson topojson_obj) with
@@ -186,9 +189,62 @@ let main () =
   | Error (`Msg m), _ -> failwith m
   | _, Error (`Msg m) -> failwith m
 
+let properties () =
+  let s = read_file "./test_cases/properties.json" in
+  let json = Ezjsonm.value_from_string s in
+  let objs =
+    Topojson.of_json json
+    |> Result.get_ok
+    |> Topojson.topology_exn
+    |> Topojson.Topology.objects
+  in
+  let names = List.map fst objs in
+  Alcotest.(check (list string))
+    "same names"
+    [ "point"; "points"; "collection"; "polygon" ]
+    names;
+  let points = List.assoc "points" objs in
+  let props =
+    match Topojson.Geometry.properties points with
+    | `Obj props -> props
+    | _ -> Alcotest.fail "exptected properties"
+  in
+  Alcotest.(check ezjsonm)
+    "same props"
+    (`O [ ("name", `String "Sir Points-a-Lot") ])
+    (`O props);
+  let multipoint =
+    Topojson.Geometry.get_multipoint_exn (Topojson.Geometry.geometry points)
+  in
+  let coords = Topojson.Geometry.MultiPoint.coordinates multipoint in
+  Alcotest.(check (array @@ array (float 1.)))
+    "same coords"
+    [| [| 1000.; 2000. |]; [| 3000.; 4000. |] |]
+    coords
+
+let in_and_out path () =
+  let s = read_file path in
+  let json = Ezjsonm.value_from_string s in
+  let topojson = Topojson.of_json json |> Result.get_ok in
+  let s' = Topojson.to_json topojson |> Ezjsonm.value_to_string in
+  let json = Ezjsonm.value_from_string s' in
+  let topojson' = Topojson.of_json json |> Result.get_ok in
+  Alcotest.(check ezjsonm)
+    "same topojson"
+    (Topojson.to_json topojson)
+    (Topojson.to_json topojson')
+
+let paths =
+  Array.map (( ^ ) "./test_cases/") (Sys.readdir "test_cases") |> Array.to_list
+
 let () =
   Alcotest.run "topojson"
     [
       ( "parsing",
-        [ ("simple", `Quick, main); ("geometries", `Quick, geometries) ] );
+        [
+          ("simple", `Quick, main);
+          ("geometries", `Quick, geometries);
+          ("properties", `Quick, properties);
+        ]
+        @ List.map (fun p -> ("read-write", `Quick, in_and_out p)) paths );
     ]
