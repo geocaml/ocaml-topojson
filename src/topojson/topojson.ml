@@ -586,6 +586,11 @@ module Make (J : Intf.Json) = struct
   type topojson = Topology of Topology.t | Geometry of Geometry.t
   type t = { topojson : topojson; bbox : float array option }
 
+  let topology_exn t =
+    match t.topojson with
+    | Topology t -> t
+    | _ -> invalid_arg "Expected a topology object but received a geometry."
+
   let topojson t = t.topojson
   let bbox t = t.bbox
   let topojson_to_t tjson bbox = { topojson = tjson; bbox }

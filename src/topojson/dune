@@ -2,3 +2,6 @@
  (public_name topojson)
  (name topojson)
  (libraries))
+
+(documentation
+ (package topojson))

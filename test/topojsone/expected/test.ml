@@ -1,7 +1,7 @@
 open Eio
 
-let src_of_flow flow =
-  let buff = Cstruct.create 2048 in
+let src_of_flow ?(size = 2048) flow =
+  let buff = Cstruct.create size in
   fun () ->
     let got = Eio.Flow.(single_read flow buff) in
     let t = Cstruct.sub buff 0 got in
@@ -15,7 +15,7 @@ let buffer_to_dst buf bs =
 
 (* Tests to validate implemented functions/ modules  *)
 let test_map_objects_topojson ~fs () =
-  with_src fs "../../topojson/test_cases/files/exemplar.json" @@ fun src ->
+  with_src fs "../../topojson/test_cases/topology.json" @@ fun src ->
   let buffer = Buffer.create 1024 in
   let dst = buffer_to_dst buffer in
   let f (name, geometry) =
@@ -23,11 +23,13 @@ let test_map_objects_topojson ~fs () =
     let open Topojsone in
     let new_geometry =
       match
-        (Topo.Geometry.geometry geometry, Topo.Geometry.foreign_members geometry)
+        ( Topojson.Geometry.geometry geometry,
+          Topojson.Geometry.foreign_members geometry )
       with
-      | Topo.Geometry.Collection _, f ->
-          Topo.Geometry.(
-            v ~foreign_members:f Topo.Geometry.(linestring (Arc_index.v [ 2 ])))
+      | Topojson.Geometry.Collection _, f ->
+          Topojson.Geometry.(
+            v ~foreign_members:f
+              Topojson.Geometry.(linestring (Arc_index.v [ 2 ])))
       | _ -> geometry
     in
     (new_name, new_geometry)
@@ -44,7 +46,7 @@ let test_map_objects_topojson ~fs () =
       failwith "Internal err"
 
 let test_fold_object ~fs () =
-  with_src fs "../../topojson/test_cases/files/exemplar.json" @@ fun src ->
+  with_src fs "../../topojson/test_cases/topology.json" @@ fun src ->
   let initial_acc = 0 in
   let open Topojsone in
   let f acc (_, _geometry) = acc + 1 in

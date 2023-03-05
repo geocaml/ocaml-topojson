@@ -71,7 +71,7 @@ We could just as easily build the same TopoJSON value using the constructors pro
 ```ocaml
 # let arcs = [| [| Geometry.Position.v ~lng:100. ~lat:0. (); Geometry.Position.v ~lng:101. ~lat:0. (); Geometry.Position.v ~lng:101. ~lat:1. (); Geometry.Position.v ~lng:100. ~lat:1. (); Geometry.Position.v ~lng:100. ~lat:0. () |] |];;
 val arcs : Geometry.Position.t array array =
-  [|[|<abstr>; <abstr>; <abstr>; <abstr>; <abstr>|]|]
+  [|[|[|100.; 0.|]; [|101.; 0.|]; [|101.; 1.|]; [|100.; 1.|]; [|100.; 0.|]|]|]
 # let instance = Geometry.(polygon [| LineString.v (Arc_index.v [ 0 ]) |]);;
 val instance : Geometry.geometry = Topojson.Geometry.Polygon <abstr>
 # let topology = Topology.v ~arcs [ "Instance", Geometry.v instance ];;
@@ -169,7 +169,8 @@ You may wish to visit all of the `objects` in your object.
 
 ```ocaml
 # Topojsone.map_object;;
-- : (string * Topojsone.Topo.Geometry.t -> string * Topojsone.Topo.Geometry.t) ->
+- : (string * Topojsone.Topojson.Geometry.t ->
+     string * Topojsone.Topojson.Geometry.t) ->
     Geojsone.Jsone.src ->
     Geojsone.Jsone.dst -> (unit, Topojsone.Err.t) result
 = <fun>
@@ -190,10 +191,8 @@ For example, we could rename the `example` object and change the value of the li
     in
     (new_name, new_geometry)
     let buf = Buffer.create 256;;
-val test_map_objects :
-  string * Topojsone.Topo.Geometry.t -> string * Topojsone.Topo.Geometry.t =
-  <fun>
-val buf : Buffer.t = <abstr>
+Line 6, characters 10-32:
+Error: Unbound module Topo
 ```
 Applying to our `topojson_string` we will have
 
@@ -201,10 +200,11 @@ Applying to our `topojson_string` we will have
 # let source () = src_of_flow @@ Eio.Flow.string_source topojson_string;;
 val source : unit -> unit -> Cstruct.t = <fun>
 # Topojsone.(map_object test_map_objects (source ()) (buffer_to_dst buf));;
-- : (unit, Topojsone.Err.t) result = Ok ()
+Line 1, characters 23-39:
+Error: Unbound value test_map_objects
 # Buffer.contents buf;;
-- : string =
-"{\"arcs\":[[[0,0],[0,9999],[2000,0],[0,-9999],[-2000,0]]],\"objects\":{\"new_example \":{\"type\":\"LineString\",\"arcs\":[2]}},\"transform\":{\"scale\":[0.0005,0.0001],\"translate\":[100,0]},\"type\":\"Topology\",\"extra\":[\"Wow!\"]}"
+Line 1, characters 17-20:
+Error: Unbound value buf
 ```
 
 ## Folding
@@ -212,7 +212,7 @@ Folding is similar to mapping except you can accumulate a value as you iterate o
 
 ```ocaml
 # Topojsone.fold_object;;
-- : ('acc -> string * Topojsone.Topo.Geometry.t -> 'acc) ->
+- : ('acc -> string * Topojsone.Topojson.Geometry.t -> 'acc) ->
     'acc -> Topojsone.Jsone.src -> ('acc, Topojsone.Err.t) result
 = <fun>
 ```

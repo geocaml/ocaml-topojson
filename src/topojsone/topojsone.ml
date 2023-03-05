@@ -37,7 +37,7 @@ end
 
 exception Abort of Err.t
 
-module Topo = struct
+module Topojson = struct
   module Ezjsone_parser = struct
     type t = Ezjsone.value
 
@@ -177,12 +177,12 @@ let map_object f src dst =
         ()
     | `Lexeme (`Name geometry_name) -> (
         let geometry_json = decode_single_object decoder in
-        match Topo.Geometry.of_json geometry_json with
+        match Topojson.Geometry.of_json geometry_json with
         | Error (`Msg m) -> failwith m
         | Ok g ->
             let new_name, new_geometry = f (geometry_name, g) in
             enc (`Lexeme (`Name new_name));
-            encode_value encoder (Topo.Geometry.to_json new_geometry);
+            encode_value encoder (Topojson.Geometry.to_json new_geometry);
             loop_through_objects decoder)
     | _ -> failwith "Unexpected lexeme"
   in
@@ -218,7 +218,7 @@ let fold_object f initial_acc src =
     | `Lexeme `Oe -> initial_acc
     | `Lexeme (`Name geometry_name) -> (
         let geometry_json = decode_single_object decoder in
-        match Topo.Geometry.of_json geometry_json with
+        match Topojson.Geometry.of_json geometry_json with
         | Error (`Msg m) -> failwith m
         | Ok v ->
             let new_acc = f initial_acc (geometry_name, v) in
