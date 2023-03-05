@@ -6,8 +6,8 @@ description:
 maintainer: ["patrick@sirref.org"]
 authors: ["Patrick Ferris" "Jay Dev Jha"]
 license: "MIT"
-homepage: "https://github.com/patricoferris/ocaml-topojson"
-bug-reports: "https://github.com/patricoferris/ocaml-topojson/issues"
+homepage: "https://github.com/geocaml/ocaml-topojson"
+bug-reports: "https://github.com/geocaml/ocaml-topojson/issues"
 depends: [
   "dune" {>= "3.0"}
   "brr" {with-test}
@@ -32,4 +32,4 @@ build: [
     "@doc" {with-doc}
   ]
 ]
-dev-repo: "git+https://github.com/patricoferris/ocaml-topojson.git"
+dev-repo: "git+https://github.com/geocaml/ocaml-topojson.git"

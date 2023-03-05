@@ -5,7 +5,7 @@
 (generate_opam_files true)
 
 (source
- (github patricoferris/ocaml-topojson))
+ (github geocaml/ocaml-topojson))
 
 (license MIT)
 
