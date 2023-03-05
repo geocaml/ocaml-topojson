@@ -15,8 +15,8 @@
 
 (package
  (name topojson)
- (synopsis "A pure OCaml library for working with TopoJSON format")
- (description "This library provides a functor for building a module for manipulating and parsing Topojson into OCaml.")
+ (synopsis "A pure OCaml library for working with the TopoJSON format")
+ (description "This library provides a pure OCaml library for working with TopoJSON.")
  (depends
    (brr :with-test)
    (bos :with-test)
@@ -27,8 +27,8 @@
 
 (package
  (name topojsone)
- (synopsis "Streaming topojson library")
- (description "A library for manipulating Topojson as a stream, useful because Topojson can be gigabytes in size.")
+ (synopsis "Streaming TopoJSON library")
+ (description "A library for working with TopoJSON without loading all of the data into memory at once.")
  (depends
    (topojson (= :version))
    geojsone
