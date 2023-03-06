@@ -1,5 +1,6 @@
 (test
  (name test)
+ (package topojsone)
  (deps
   (source_tree input))
  (libraries eio_main jsonm topojsone))
