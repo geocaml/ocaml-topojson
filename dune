@@ -1,4 +1,5 @@
 (mdx
  (libraries topojson topojsone geojsone eio)
+ (package topojsone)
  (preludes doc/prelude.txt)
  (files README.md))

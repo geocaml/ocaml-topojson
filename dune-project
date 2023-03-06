@@ -18,6 +18,7 @@
  (synopsis "A pure OCaml library for working with the TopoJSON format")
  (description "This library provides a pure OCaml library for working with TopoJSON.")
  (depends
+   (ocaml (>= 4.08))
    (brr :with-test)
    (bos :with-test)
    (bechamel-notty (and (>= 0.1.0) :with-test))
