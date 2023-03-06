@@ -19,9 +19,7 @@
  (description "This library provides a pure OCaml library for working with TopoJSON.")
  (depends
    (ocaml (>= 4.08))
-   (brr :with-test)
    (bos :with-test)
-   (bechamel-notty (and (>= 0.1.0) :with-test))
    (mdx (and (>= 1.10.0) :with-test))
    (alcotest :with-test)
    (ezjsonm  :with-test)))
@@ -33,6 +31,10 @@
  (depends
    (topojson (= :version))
    geojsone
+   (bos :with-test)
+   (mdx (and (>= 1.10.0) :with-test))
+   (alcotest :with-test)
+   (ezjsonm  :with-test)
    (eio_main (and (>= 0.7) :with-test))))
 
 (using mdx 0.2)

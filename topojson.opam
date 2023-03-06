@@ -11,9 +11,7 @@ bug-reports: "https://github.com/geocaml/ocaml-topojson/issues"
 depends: [
   "dune" {>= "3.0"}
   "ocaml" {>= "4.08"}
-  "brr" {with-test}
   "bos" {with-test}
-  "bechamel-notty" {>= "0.1.0" & with-test}
   "mdx" {>= "1.10.0" & with-test}
   "alcotest" {with-test}
   "ezjsonm" {with-test}

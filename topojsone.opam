@@ -12,6 +12,10 @@ depends: [
   "dune" {>= "3.0"}
   "topojson" {= version}
   "geojsone"
+  "bos" {with-test}
+  "mdx" {>= "1.10.0" & with-test}
+  "alcotest" {with-test}
+  "ezjsonm" {with-test}
   "eio_main" {>= "0.7" & with-test}
   "odoc" {with-doc}
 ]
