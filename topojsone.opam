@@ -4,7 +4,7 @@ synopsis: "Streaming TopoJSON library"
 description:
   "A library for working with TopoJSON without loading all of the data into memory at once."
 maintainer: ["patrick@sirref.org"]
-authors: ["Patrick Ferris" "Jay Dev Jha"]
+authors: ["Patrick Ferris" "Jay Dev Jha" "Prisca Chidimma"]
 license: "MIT"
 homepage: "https://github.com/geocaml/ocaml-topojson"
 bug-reports: "https://github.com/geocaml/ocaml-topojson/issues"

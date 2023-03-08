@@ -4,7 +4,7 @@ synopsis: "A pure OCaml library for working with the TopoJSON format"
 description:
   "This library provides a pure OCaml library for working with TopoJSON."
 maintainer: ["patrick@sirref.org"]
-authors: ["Patrick Ferris" "Jay Dev Jha"]
+authors: ["Patrick Ferris" "Jay Dev Jha" "Prisca Chidimma"]
 license: "MIT"
 homepage: "https://github.com/geocaml/ocaml-topojson"
 bug-reports: "https://github.com/geocaml/ocaml-topojson/issues"

@@ -9,7 +9,7 @@
 
 (license MIT)
 
-(authors "Patrick Ferris" "Jay Dev Jha")
+(authors "Patrick Ferris" "Jay Dev Jha" "Prisca Chidimma")
 
 (maintainers "patrick@sirref.org")
 
